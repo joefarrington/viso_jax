@@ -7,10 +7,6 @@ readme = "README.md"
 packages = [{include = "viso_jax"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
-
-
-[tool.poetry.dependencies]
 python = ">=3.9,<3.11"
 hydra-core = "^1.2.0"
 numpy = "^1.23.3"
