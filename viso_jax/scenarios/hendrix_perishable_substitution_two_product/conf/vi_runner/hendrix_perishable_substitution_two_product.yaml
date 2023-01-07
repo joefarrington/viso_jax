@@ -1,0 +1,17 @@
+_target_: viso_jax.scenarios.hendrix_perishable_substitution_two_product.vi_runner.HendrixPerishableSubstitutionTwoProductVIR
+max_useful_life: ${scenario_settings.max_useful_life}
+max_order_quantity_a: ${scenario_settings.max_order_quantity_a}
+max_order_quantity_b: ${scenario_settings.max_order_quantity_b}
+demand_poisson_mean_a: ${scenario_settings.demand_poisson_mean_a}
+demand_poisson_mean_b: ${scenario_settings.demand_poisson_mean_b}
+substitution_probability: ${scenario_settings.substitution_probability}
+variable_order_cost_a: ${scenario_settings.variable_order_cost_a}
+variable_order_cost_b: ${scenario_settings.variable_order_cost_b}
+sales_price_a: ${scenario_settings.sales_price_a}
+sales_price_b: ${scenario_settings.sales_price_b}
+batch_size: 3000
+epsilon: 1e-4
+gamma: ${scenario_settings.gamma}
+checkpoint_frequency: 1  # Zero for no checkpoints
+resume_from_checkpoint: False
+use_pmap: True

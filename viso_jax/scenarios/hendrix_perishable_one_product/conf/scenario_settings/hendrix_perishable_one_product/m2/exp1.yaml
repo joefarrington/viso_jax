@@ -1,0 +1,3 @@
+# No overrides, the base settings are for m=2, exp1
+defaults:
+  - hendrix_perishable_one_product_base_settings

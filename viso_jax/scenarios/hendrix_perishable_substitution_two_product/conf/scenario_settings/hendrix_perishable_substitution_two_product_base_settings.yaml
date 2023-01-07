@@ -1,0 +1,13 @@
+# Base scenario settings are those for m=2, experiment 1
+max_useful_life: 2
+demand_poisson_mean_a: 5.0
+demand_poisson_mean_b: 5.0
+substitution_probability: 0.5
+variable_order_cost_a: 0.5
+variable_order_cost_b: 0.5
+sales_price_a: 1.0
+sales_price_b: 1.0
+max_order_quantity_a: 10
+max_order_quantity_b: 10
+max_steps_in_episode: 3650
+gamma: 1.0

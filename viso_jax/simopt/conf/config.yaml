@@ -1,0 +1,30 @@
+defaults:
+  - _self_
+  - scenario_settings: de_moor_perishable_base_settings
+  - rollout_wrapper: de_moor_perishable
+  - policy: S_policy
+
+hydra:
+  job:
+    chdir: True
+  searchpath:
+    # Search paths assume that run_optuna_simopt.py will be run from simopt/
+    - file://../scenarios/de_moor_perishable/conf
+    - file://../scenarios/hendrix_perishable_one_product/conf
+    - file://../scenarios/hendrix_perishable_substitution_two_product/conf
+
+param_search:
+  sampler:
+    _target_: optuna.samplers.GridSampler
+  max_parallel_trials: 50
+  max_iterations: 10
+  num_rollouts: 100
+  seed: 10
+  param_low: 0
+  param_high: ${scenario_settings.max_order_quantity}
+
+evaluation:
+  seed: 78
+  num_rollouts: 200
+
+

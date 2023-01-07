@@ -1,0 +1,18 @@
+_target_: viso_jax.scenarios.de_moor_perishable.vi_runner.DeMoorPerishableVIR
+max_demand: 100
+demand_gamma_mean: ${scenario_settings.demand_gamma_mean}
+demand_gamma_cov: ${scenario_settings.demand_gamma_cov}
+max_useful_life: ${scenario_settings.max_useful_life}
+lead_time: ${scenario_settings.lead_time}
+max_order_quantity: ${scenario_settings.max_order_quantity}
+variable_order_cost: ${scenario_settings.variable_order_cost}
+shortage_cost: ${scenario_settings.shortage_cost}
+wastage_cost: ${scenario_settings.wastage_cost}
+holding_cost: ${scenario_settings.holding_cost}
+issue_policy: ${scenario_settings.issue_policy}
+batch_size: 20000
+epsilon: 1e-4
+gamma: 0.99
+checkpoint_frequency: 100  # Zero for no checkpoints
+resume_from_checkpoint: False
+use_pmap: True

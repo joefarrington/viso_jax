@@ -1,0 +1,5 @@
+defaults:
+  - hendrix_perishable_one_product_base_settings
+
+demand_poisson_mean: 7.0
+max_order_quantity: 14

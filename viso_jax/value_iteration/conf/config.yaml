@@ -1,0 +1,22 @@
+defaults:
+  - _self_
+  - scenario_settings: de_moor_perishable_base_settings
+  - vi_runner: de_moor_perishable
+
+hydra:
+  job:
+    chdir: True
+  searchpath:
+      # Search paths assume that run_value_iteration.py will be run from value_iteration/
+    - file://../scenarios/de_moor_perishable/conf
+    - file://../scenarios/hendrix_perishable_one_product/conf
+    - file://../scenarios/hendrix_perishable_substitution_two_product/conf
+
+run_settings:
+    max_iter: 5000
+    min_iter: 1
+    save_final_values: True
+    save_policy: True
+
+jax_settings:
+  double_precision: True

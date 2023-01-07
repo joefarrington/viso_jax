@@ -1,0 +1,6 @@
+defaults:
+  - hendrix_perishable_substitution_two_product_base_settings
+
+max_useful_life: 3
+max_order_quantity_a: 15
+max_order_quantity_b: 15

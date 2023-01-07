@@ -1,0 +1,4 @@
+defaults:
+  - de_moor_perishable_base_settings
+
+wastage_cost: 10.0

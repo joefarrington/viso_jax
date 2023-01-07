@@ -1,0 +1,14 @@
+# Base scenario settings are those for m=2, experiment 1
+max_useful_life: 2
+lead_time: 1
+max_order_quantity: 10
+issue_policy: lifo
+max_demand: 100
+demand_gamma_mean: 4.0
+demand_gamma_cov: 0.5
+variable_order_cost: 3.0
+shortage_cost: 5.0
+wastage_cost: 7.0
+holding_cost: 1.0
+max_steps_in_episode: 3650
+gamma: 1.0

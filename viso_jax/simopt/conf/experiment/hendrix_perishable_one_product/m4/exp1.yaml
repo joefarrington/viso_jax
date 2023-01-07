@@ -1,0 +1,9 @@
+# @package _global_
+
+defaults:
+  - override /rollout_wrapper: hendrix_perishable_one_product
+  - override /scenario_settings: hendrix_perishable_one_product/m4/exp1
+  - override /policy: waste_conscious_S_policy
+
+scenario_settings:
+  max_order_quantity: 25

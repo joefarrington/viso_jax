@@ -1,0 +1,14 @@
+_target_: viso_jax.utils.rollout.RolloutWrapper
+env_id: HendrixPerishableOneProduct
+num_env_steps: 3650
+num_burnin_steps: 100
+env_kwargs:
+  max_useful_life: ${scenario_settings.max_useful_life}
+  max_order_quantity: ${scenario_settings.max_order_quantity}
+env_params:
+  demand_poisson_mean: ${scenario_settings.demand_poisson_mean}
+  variable_order_cost: ${scenario_settings.variable_order_cost}
+  sales_price : ${scenario_settings.sales_price}
+  max_steps_in_episode: ${scenario_settings.max_steps_in_episode}
+  gamma: ${scenario_settings.gamma}
+return_info: False

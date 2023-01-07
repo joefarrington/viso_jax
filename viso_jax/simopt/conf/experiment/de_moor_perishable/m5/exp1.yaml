@@ -1,0 +1,5 @@
+# @package _global_
+
+defaults:
+  - override /rollout_wrapper: de_moor_perishable
+  - override /scenario_settings: de_moor_perishable/m5/exp1

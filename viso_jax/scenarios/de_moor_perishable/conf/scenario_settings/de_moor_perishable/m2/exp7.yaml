@@ -1,0 +1,5 @@
+defaults:
+  - de_moor_perishable_base_settings
+
+lead_time: 2
+wastage_cost: 10.0

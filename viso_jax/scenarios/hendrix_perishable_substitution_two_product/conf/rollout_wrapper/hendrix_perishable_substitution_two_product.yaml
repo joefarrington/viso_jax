@@ -1,0 +1,19 @@
+_target_: viso_jax.utils.rollout.RolloutWrapper
+env_id: HendrixPerishableSubstitutionTwoProduct
+num_env_steps: 3650
+num_burnin_steps: 100
+env_kwargs:
+  max_useful_life: ${scenario_settings.max_useful_life}
+env_params:
+  demand_poisson_mean_a: ${scenario_settings.demand_poisson_mean_a}
+  demand_poisson_mean_b: ${scenario_settings.demand_poisson_mean_b}
+  substitution_probability: ${scenario_settings.substitution_probability}
+  variable_order_cost_a: ${scenario_settings.variable_order_cost_a}
+  variable_order_cost_b: ${scenario_settings.variable_order_cost_b}
+  sales_price_a: ${scenario_settings.sales_price_a}
+  sales_price_b: ${scenario_settings.sales_price_b}
+  max_order_quantity_a: ${scenario_settings.max_order_quantity_a}
+  max_order_quantity_b: ${scenario_settings.max_order_quantity_b}
+  max_steps_in_episode: ${scenario_settings.max_steps_in_episode}
+  gamma: ${scenario_settings.gamma}
+return_info: False

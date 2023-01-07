@@ -41,6 +41,12 @@ black = "^22.12.0"
 pytest = "^7.1.3"
 pytest-datadir = "^1.4.1"
 
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "serial",
+]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

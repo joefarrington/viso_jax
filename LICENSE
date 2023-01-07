@@ -193,7 +193,7 @@ limitations under the License.
 
 ---
 
-Code in utils/rollout is adapted from
+Code in utils/rollout.py is adapted from
 https://github.com/RobertTLange/gymnax/blob/main/gymnax/experimental/rollout.py
 
 Code in registration.py is adapted from

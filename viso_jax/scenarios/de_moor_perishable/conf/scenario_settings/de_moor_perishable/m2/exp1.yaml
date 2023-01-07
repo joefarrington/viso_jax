@@ -1,0 +1,4 @@
+# No overrides, the base settings are for m=2, exp1
+defaults:
+  - de_moor_perishable_base_settings
+

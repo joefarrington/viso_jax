@@ -1,0 +1,6 @@
+defaults:
+  - de_moor_perishable_base_settings
+
+max_useful_life: 5
+issue_policy: fifo
+wastage_cost: 10.0
