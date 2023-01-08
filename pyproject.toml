@@ -45,6 +45,7 @@ pytest-datadir = "^1.4.1"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "serial",
+    "jax: marks tests for checking JAX recognises accelerator",
 ]
 
 [build-system]
