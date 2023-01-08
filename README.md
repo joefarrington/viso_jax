@@ -10,7 +10,7 @@ To use JAX with Nvidia GPU-acceleration, you must first install CUDA and CuDNN. 
 
 Python dependencies are listed in `pyproject.toml`. We use [poetry](https://python-poetry.org/docs/) for dependency management.
 
-viso_jax and its Python dependencies can be installed using the code snippet below. This snippet assumes that you have [poetry installed](https://python-poetry.org/docs/#installation). If this snippet not run in a virtual environment, poetry will create a new virtual environment before installing the dependecies.
+viso_jax and its Python dependencies can be installed using the code snippet below. This snippet assumes that you have [poetry installed](https://python-poetry.org/docs/#installation). If this snippet not run in a virtual environment, poetry will create a new virtual environment before installing the dependencies.
 
 ```bash
 git clone https://github.com/joefarrington/viso_jax.git
