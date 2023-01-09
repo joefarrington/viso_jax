@@ -131,5 +131,8 @@ dmypy.json
 # Results saved by hydra
 outputs
 
+# Draft notebooks
+draft_notebooks
+
 #VS Code settings
 .vscode
