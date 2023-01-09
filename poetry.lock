@@ -415,17 +415,17 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "etils"
-version = "0.9.0"
+version = "1.0.0"
 description = "Collection of common python utils"
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 
 [package.extras]
 all = ["etils[array-types]", "etils[eapp]", "etils[ecolab]", "etils[edc]", "etils[enp]", "etils[epath]", "etils[epy]", "etils[etqdm]", "etils[etree-dm]", "etils[etree-jax]", "etils[etree-tf]", "etils[etree]"]
 array-types = ["etils[enp]"]
 dev = ["chex", "pylint (>=2.6.0)", "pytest", "pytest-subtests", "pytest-xdist", "yapf"]
-eapp = ["absl-py", "simple_parsing"]
+eapp = ["absl-py", "etils[epy]", "simple_parsing"]
 ecolab = ["etils[enp]", "etils[epy]", "jupyter", "mediapy", "numpy"]
 edc = ["etils[epy]", "typing_extensions"]
 enp = ["etils[epy]", "numpy"]
@@ -435,7 +435,7 @@ etqdm = ["absl-py", "etils[epy]", "tqdm"]
 etree = ["etils[array_types]", "etils[enp]", "etils[epy]", "etils[etqdm]"]
 etree-dm = ["dm-tree", "etils[etree]"]
 etree-jax = ["etils[etree]", "jax[cpu]"]
-etree-tf = ["etils[etree]", "tf-nightly"]
+etree-tf = ["etils[etree]", "tensorflow"]
 lazy-imports = ["etils[ecolab]"]
 
 [[package]]
@@ -2163,7 +2163,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "cb6837cca89808b2ece06f1d5a84199fb0bfe589dae3fde05cb093d365a6b88c"
+content-hash = "195067a42fd00d30be6a254a9d8352db1eeed76bd58aa60980f2e38e1c1e8aa8"
 
 [metadata.files]
 absl-py = [
@@ -2498,8 +2498,8 @@ entrypoints = [
     {file = "entrypoints-0.4.tar.gz", hash = "sha256:b706eddaa9218a19ebcd67b56818f05bb27589b1ca9e8d797b74affad4ccacd4"},
 ]
 etils = [
-    {file = "etils-0.9.0-py3-none-any.whl", hash = "sha256:635d6f7d1c519eb194304228543a4c5c7df0e6b58243302473e34c18cf720588"},
-    {file = "etils-0.9.0.tar.gz", hash = "sha256:489103e9e499a566765c60458ee15d185cf0065f2060a4d16a68f8f46962ed0d"},
+    {file = "etils-1.0.0-py3-none-any.whl", hash = "sha256:22ff08a4c964ee6caca372dc511c931b5f9b4ff21bdd30ef093018bc06c3b6b2"},
+    {file = "etils-1.0.0.tar.gz", hash = "sha256:d10982f7702422bea8635d5284b8bed629f51919fc122ac1e1e4abf45ec8f785"},
 ]
 exceptiongroup = [
     {file = "exceptiongroup-1.1.0-py3-none-any.whl", hash = "sha256:327cbda3da756e2de031a3107b81ab7b3770a602c4d16ca618298c526f4bec1e"},

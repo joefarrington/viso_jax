@@ -11,8 +11,8 @@ python = ">=3.8,<3.11"
 hydra-core = "^1.2.0"
 numpy = "^1.23.3"
 pandas = "^1.5.0"
-jaxlib = {version = "^0.3.15+cuda11.cudnn82", source = "jaxlib"}
 jax = {extras = ["cuda"], version = "^0.3.15", source = "jax"}
+jaxlib = {version = "^0.3.15", source = "jaxlib"}
 matplotlib = "^3.6.2"
 numpyro = "^0.10.1"
 gymnax = "^0.0.5"
