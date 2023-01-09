@@ -12,12 +12,13 @@ hydra:
     - file://../scenarios/de_moor_perishable/conf
     - file://../scenarios/hendrix_perishable_one_product/conf
     - file://../scenarios/hendrix_perishable_substitution_two_product/conf
+    - file://../scenarios/mirjalili_perishable_platelet/conf
 
 param_search:
   sampler:
     _target_: optuna.samplers.GridSampler
   max_parallel_trials: 50
-  max_iterations: 10
+  max_iterations: 30
   num_rollouts: 100
   seed: 10
   param_low: 0

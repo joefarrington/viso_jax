@@ -1,0 +1,11 @@
+# @package _global_
+
+defaults:
+  - override /rollout_wrapper: mirjalili_perishable_platelet
+  - override /scenario_settings: mirjalili_perishable_platelet/m3/endo1
+  - override /policy: sS_policy
+
+param_search:
+  sampler:
+    _target_: optuna.samplers.NSGAIISampler
+    population_size: 50
