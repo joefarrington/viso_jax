@@ -57,12 +57,12 @@ def simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval):
         log.info(f"Round {i}: Simulating rollouts.")
         rollout_results = rollout_wrapper.population_rollout(rng_eval, policy_params)
         log.info(f"Round {i}: Processing results.")
-        objectives = rollout_results["cum_return"].mean(axis=(-2, -1))
+        objectives = rollout_results["reward"].mean(axis=(-2, -1))
 
         for idx in range(num_parallel_trials):
             trials[idx].set_user_attr(
-                "mean_daily_undiscounted_reward",
-                rollout_results["reward"][idx].mean(),
+                "mean_cumulative_discounted_reward",
+                rollout_results["cum_return"][idx].mean(),
             )
             try:
                 study.tell(trials[idx], objectives[idx])
@@ -70,7 +70,7 @@ def simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval):
                 break
 
         log.info(
-            f"Round {i} complete. Best params: {study.best_params}, mean cumulative return: {study.best_value}"
+            f"Round {i} complete. Best params: {study.best_params}, mean daily_reward: {study.best_value}"
         )
         i += 1
     return study
@@ -105,17 +105,17 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
         log.info(f"Round {i}: Simulating rollouts.")
         rollout_results = rollout_wrapper.population_rollout(rng_eval, policy_params)
         log.info(f"Round {i}: Processing results.")
-        objectives = rollout_results["cum_return"].mean(axis=(-2, -1))
+        objectives = rollout_results["reward"].mean(axis=(-2, -1))
 
         for idx in range(cfg.param_search.max_parallel_trials):
             trials[idx].set_user_attr(
-                "mean_daily_undiscounted_reward",
-                rollout_results["reward"][idx].mean(),
+                "mean_cumulative_discounted_reward",
+                rollout_results["cum_return"][idx].mean(),
             )
             study.tell(trials[idx], objectives[idx])
 
         log.info(
-            f"Round {i} complete. Best params: {study.best_params}, mean cumulative return: {study.best_value}"
+            f"Round {i} complete. Best params: {study.best_params}, mean daily_reward: {study.best_value}"
         )
 
     return study
