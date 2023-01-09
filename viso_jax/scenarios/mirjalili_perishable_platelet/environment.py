@@ -37,11 +37,11 @@ class EnvParams:
         weekday_demand_negbin_delta: chex.Array = [5.7, 6.9, 6.5, 6.2, 5.8, 3.3, 3.4],
         shelf_life_at_arrival_distribution_c_0: chex.Array = [1.0, 0.5],
         shelf_life_at_arrival_distribution_c_1: chex.Array = [0.4, 0.8],
-        variable_order_cost: float = 0,
-        fixed_order_cost: float = 10,
-        shortage_cost: float = 20,
-        wastage_cost: float = 5,
-        holding_cost: float = 1,
+        variable_order_cost: float = 0.0,
+        fixed_order_cost: float = 10.0,
+        shortage_cost: float = 20.0,
+        wastage_cost: float = 5.0,
+        holding_cost: float = 1.0,
         max_steps_in_episode: int = 3650,
         gamma: float = 0.95,
     ):
@@ -99,7 +99,7 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
         opening_stock_after_delivery = jnp.hstack([0, state.stock]) + max_stock_received
         # Clip so no element is greater that max_order_quantity
         opening_stock_after_delivery = opening_stock_after_delivery.clip(
-            0, params.max_order_quantity
+            0, self.max_order_quantity
         )
         # Calculate this to report in info - units accepted for delivery
         new_stock_accepted = opening_stock_after_delivery - jnp.hstack([0, state.stock])
@@ -261,7 +261,7 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
         if params is None:
             params = self.default_params
         low = jnp.array([0] * self.max_useful_life)
-        high = jnp.array([6] + [params.max_order_quantity] * (self.max_useful_life - 1))
+        high = jnp.array([6] + [self.max_order_quantity] * (self.max_useful_life - 1))
         return spaces.Box(low, high, (self.max_useful_life,), dtype=jnp.int32)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
@@ -272,7 +272,7 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
             {
                 "weekday": spaces.Discrete(7),
                 "stock": spaces.Box(
-                    0, params.max_order_quantity, (self.max_useful_life - 1,), jnp.int32
+                    0, self.max_order_quantity, (self.max_useful_life - 1,), jnp.int32
                 ),
                 "step": spaces.Discrete(params.max_steps_in_episode),
             }
