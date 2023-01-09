@@ -26,7 +26,7 @@ class DeMoorPerishableVIR(ValueIterationRunner):
         wastage_cost,
         holding_cost,
         issue_policy="fifo",
-        batch_size=1000,
+        max_batch_size=1000,
         epsilon=1e-4,
         gamma=1,
         checkpoint_frequency=1,  # Zero for no checkpoints, otherwise every x iterations
@@ -66,7 +66,7 @@ class DeMoorPerishableVIR(ValueIterationRunner):
         else:
             self._issue_stock = self._issue_lifo
 
-        self.batch_size = batch_size
+        self.max_batch_size = max_batch_size
         self.epsilon = epsilon
         self.gamma = gamma
 
@@ -264,8 +264,9 @@ class DeMoorPerishableVIR(ValueIterationRunner):
             "max_useful_life": self.max_useful_life,
             "lead_time": self.lead_time,
             "max_order_quantity": self.max_order_quantity,
-            "issue_policy": self.issue_policy,
             "batch_size": self.batch_size,
+            "max_batch_size": self.max_batch_size,
+            "n_devices": self.n_devices,
             "epsilon": self.epsilon,
             "gamma": self.gamma,
             "checkpoint_frequency": self.checkpoint_frequency,

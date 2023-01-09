@@ -35,7 +35,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         shortage_cost,
         wastage_cost,
         holding_cost,
-        batch_size,
+        max_batch_size,
         epsilon,
         gamma=1,
         checkpoint_frequency=1,  # Zero for no checkpoints, otherwise every x iterations
@@ -74,7 +74,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
                 holding_cost,
             ]
         )
-        self.batch_size = batch_size
+        self.max_batch_size = max_batch_size
         self.epsilon = epsilon
         self.gamma = gamma
 
@@ -145,7 +145,6 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         shelf_life_at_arrival_distribution_c_1,
         max_useful_life,
     ):
-
         assert (
             len(shelf_life_at_arrival_distribution_c_0) == max_useful_life - 1
         ), "Shelf life at arrival distribution params should include an item for c_0 with max_useful_life - 1 parameters"
@@ -426,6 +425,8 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
             "max_useful_life": self.max_useful_life,
             "max_order_quantity": self.max_order_quantity,
             "batch_size": self.batch_size,
+            "max_batch_size": self.max_batch_size,
+            "n_devices": self.n_devices,
             "epsilon": self.epsilon,
             "gamma": self.gamma,
             "checkpoint_frequency": self.checkpoint_frequency,

@@ -11,6 +11,7 @@ hydra:
     - file://../scenarios/de_moor_perishable/conf
     - file://../scenarios/hendrix_perishable_one_product/conf
     - file://../scenarios/hendrix_perishable_substitution_two_product/conf
+    - file://../scenarios/mirjalili_perishable_platelet/conf
 
 run_settings:
     max_iter: 5000

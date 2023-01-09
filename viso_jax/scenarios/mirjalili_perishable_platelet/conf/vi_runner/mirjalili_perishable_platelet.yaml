@@ -1,0 +1,19 @@
+_target_: viso_jax.scenarios.mirjalili_perishable_platelet.vi_runner.MirjaliliPerishablePlateletVIR
+max_demand: ${scenario_settings.max_demand}
+weekday_demand_negbin_n: ${scenario_settings.weekday_demand_negbin_n}
+weekday_demand_negbin_delta: ${scenario_settings.weekday_demand_negbin_delta}
+max_useful_life: ${scenario_settings.max_useful_life}
+shelf_life_at_arrival_distribution_c_0: ${scenario_settings.shelf_life_at_arrival_distribution_c_0}
+shelf_life_at_arrival_distribution_c_1: ${scenario_settings.shelf_life_at_arrival_distribution_c_1}
+max_order_quantity: ${scenario_settings.max_order_quantity}
+variable_order_cost: ${scenario_settings.variable_order_cost}
+fixed_order_cost: ${scenario_settings.fixed_order_cost}
+shortage_cost: ${scenario_settings.shortage_cost}
+wastage_cost: ${scenario_settings.wastage_cost}
+holding_cost: ${scenario_settings.holding_cost}
+max_batch_size: 5000
+epsilon: 1e-4
+gamma: ${scenario_settings.gamma}
+checkpoint_frequency: 1  # Zero for no checkpoints
+resume_from_checkpoint: False
+use_pmap: True

@@ -5,4 +5,4 @@ defaults:
   - override /scenario_settings: hendrix_perishable_substitution_two_product/m3/exp1
 
 vi_runner:
-  batch_size: 300
+  max_batch_size: 300

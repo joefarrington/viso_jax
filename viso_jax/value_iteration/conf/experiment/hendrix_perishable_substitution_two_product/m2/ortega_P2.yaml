@@ -1,0 +1,8 @@
+# @package _global_
+
+defaults:
+  - override /vi_runner: hendrix_perishable_substitution_two_product
+  - override /scenario_settings: hendrix_perishable_substitution_two_product/m2/ortega_P2.yaml
+
+run_settings:
+  min_iter: 100

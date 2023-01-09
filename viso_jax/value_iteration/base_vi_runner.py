@@ -4,6 +4,7 @@ import jax
 import jax.numpy as jnp
 import re
 import logging
+import math
 from pathlib import Path
 
 # Enable logging
@@ -21,14 +22,14 @@ log = logging.getLogger("ValueIterationRunner")
 class ValueIterationRunner:
     def __init__(
         self,
-        batch_size,
+        max_batch_size,
         epsilon,
         gamma,
         checkpoint_frequency,
         resume_from_checkpoint,
         use_pmap=True,
     ):
-        self.batch_size = batch_size
+        self.max_batch_size = max_batch_size
         self.epsilon = epsilon
         self.gamma = gamma
         self.checkpoint_frequency = checkpoint_frequency
@@ -95,12 +96,19 @@ class ValueIterationRunner:
         self.states = jnp.array(np.array(self.state_tuples))
         log.info("Created states array")
 
+        self.n_devices = len(jax.devices())
+        self.batch_size = min(
+            self.max_batch_size, math.ceil(len(self.states) / self.n_devices)
+        )
+
         if self.use_pmap:
             # Reshape states into devices x n_batches x batch_size x state_dim
             (
                 self.padded_batched_states,
                 self.n_pad,
-            ) = self._pad_and_batch_states_for_pmap(self.states, self.batch_size)
+            ) = self._pad_and_batch_states_for_pmap(
+                self.states, self.batch_size, self.n_devices
+            )
         else:
             self.padded_batched_states, self.n_pad = self._pad_and_batch_states_no_pmap(
                 self.states, self.batch_size
@@ -181,8 +189,7 @@ class ValueIterationRunner:
         # array when the state (represented as a tuple) is used to index it
         pass
 
-    def _pad_and_batch_states_for_pmap(self, states, batch_size):
-        n_devices = len(jax.devices())
+    def _pad_and_batch_states_for_pmap(self, states, batch_size, n_devices):
         n_pad = (n_devices * batch_size) - (len(states) % (n_devices * batch_size))
         padded_states = jnp.vstack(
             [states, jnp.zeros((n_pad, states.shape[1]), dtype=jnp.int32)]
@@ -355,7 +362,9 @@ class ValueIterationRunner:
                 (
                     self.padded_batched_states,
                     self.n_pad,
-                ) = self._pad_and_batch_states_for_pmap(self.states, policy_batch_size)
+                ) = self._pad_and_batch_states_for_pmap(
+                    self.states, policy_batch_size, self.n_devices
+                )
                 best_action_idxs_padded = self.extract_policy_scan_state_batches_pmap(
                     (self.actions, self.possible_random_outcomes, V),
                     self.padded_batched_states,
@@ -421,7 +430,9 @@ class ValueIterationRunner:
             self.iteration,
         )  # arrays / dynamic values
         aux_data = {
+            "max_batch_size": self.max_batch_size,
             "batch_size": self.batch_size,
+            "n_devices": self.n_devices,
             "epsilon": self.epsilon,
             "gamma": self.gamma,
             "checkpoint_frequency": self.checkpoint_frequency,

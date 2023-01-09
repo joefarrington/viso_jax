@@ -24,7 +24,7 @@ class HendrixPerishableOneProductVIR(ValueIterationRunner):
         variable_order_cost,
         sales_price,
         max_order_quantity,
-        batch_size,
+        max_batch_size,
         epsilon,
         gamma=1,
         checkpoint_frequency=0,  # Zero for no checkpoints, otherwise every x iterations
@@ -37,7 +37,7 @@ class HendrixPerishableOneProductVIR(ValueIterationRunner):
         self.sales_price = sales_price
         self.max_order_quantity = max_order_quantity
 
-        self.batch_size = batch_size
+        self.max_batch_size = max_batch_size
         self.epsilon = epsilon
         self.gamma = gamma
 
@@ -321,6 +321,8 @@ class HendrixPerishableOneProductVIR(ValueIterationRunner):
             "sales_price": self.sales_price,
             "max_order_quantity": self.max_order_quantity,
             "batch_size": self.batch_size,
+            "max_batch_size": self.max_batch_size,
+            "n_devices": self.n_devices,
             "epsilon": self.epsilon,
             "gamma": self.gamma,
             "checkpoint_frequency": self.checkpoint_frequency,

@@ -10,7 +10,7 @@ shortage_cost: ${scenario_settings.shortage_cost}
 wastage_cost: ${scenario_settings.wastage_cost}
 holding_cost: ${scenario_settings.holding_cost}
 issue_policy: ${scenario_settings.issue_policy}
-batch_size: 20000
+max_batch_size: 1000
 epsilon: 1e-4
 gamma: 0.99
 checkpoint_frequency: 100  # Zero for no checkpoints

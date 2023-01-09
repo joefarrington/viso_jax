@@ -30,7 +30,7 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
         sales_price_b,
         max_order_quantity_a,
         max_order_quantity_b,
-        batch_size,
+        max_batch_size,
         epsilon,
         gamma=1,
         checkpoint_frequency=0,  # Zero for no checkpoints, otherwise every x iterations
@@ -52,7 +52,7 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
         self.max_order_quantity_a = max_order_quantity_a
         self.max_order_quantity_b = max_order_quantity_b
 
-        self.batch_size = batch_size
+        self.max_batch_size = max_batch_size
         self.epsilon = epsilon
         self.gamma = gamma
 
@@ -545,6 +545,8 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
             "max_order_quantity_a": self.max_order_quantity_a,
             "max_order_quantity_b": self.max_order_quantity_b,
             "batch_size": self.batch_size,
+            "max_batch_size": self.max_batch_size,
+            "n_devices": self.n_devices,
             "epsilon": self.epsilon,
             "gamma": self.gamma,
             "checkpoint_frequency": self.checkpoint_frequency,

@@ -1,0 +1,7 @@
+# No overrides, the base settings are for m=2, exp1, which is the same as Ortega P1
+# except for the minimum number of iterations.
+# Max order quantities differ from those in Table 3 of Ortega et al (2019)
+# but reported order quantities and N states appear not to match up so have used
+# used maximum order quantities calculated using newsvendor rule as in Hendrix et al (2019)
+defaults:
+  - hendrix_perishable_substitution_two_product_base_settings

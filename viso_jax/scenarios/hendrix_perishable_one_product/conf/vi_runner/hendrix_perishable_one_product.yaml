@@ -4,7 +4,7 @@ max_order_quantity: ${scenario_settings.max_order_quantity}
 demand_poisson_mean: ${scenario_settings.demand_poisson_mean}
 variable_order_cost: ${scenario_settings.variable_order_cost}
 sales_price: ${scenario_settings.sales_price}
-batch_size: 20000
+max_batch_size: 10000
 epsilon: 1e-4
 gamma: ${scenario_settings.gamma}
 checkpoint_frequency: 1  # Zero for no checkpoints
