@@ -26,6 +26,22 @@ poetry run pytest -m "jax"
 
 ## Scenarios
 
+### de_moor_perishable
+
+Adapted from <i>"Reward shaping to improve the performance of deep reinforcement learning in perishable inventory management"</i> by [De Moor et al (2022)](https://doi.org/10.1016/j.ejor.2021.10.045)
+
+### hendrix_perishable_one_product
+
+Adapted from the single product scenarios in <i>"On computing optimal policies in perishable inventory control using value iteration"</i> by [Hendrix et al (2019)](https://doi.org/10.1002/cmm4.1027)
+
+### hendrix_perishable_substitution_two_product
+
+Adapted from the two product scenarios in <i>"On computing optimal policies in perishable inventory control using value iteration"</i> by [Hendrix et al (2019)](https://doi.org/10.1002/cmm4.1027)
+
+### mirjalili_perishable_platelet
+
+Adapted from the scenario in Chapter 6 of <i>"Data-driven modelling and control of hospital blood inventory"</i> by [Mirjalili (2022)](https://tspace.library.utoronto.ca/bitstream/1807/124976/1/Mirjalili_Mahdi_202211_PhD_thesis.pdf)
+
 ## Running experiments
 
 ## Colab examples
