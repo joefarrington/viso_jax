@@ -104,12 +104,8 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
         )
 
         # Pre-compute conditional probability distributions
-        log.info("Calculating P(u)")
         self.pu = self._calculate_pu()
-        log.info("Calculated P(u)")
-        log.info("Calculating P(z)")
         self.pz = self._calculate_pz()
-        log.info("Calculated P(z)")
 
     def generate_states(self):
         possible_states_a = self._generate_states_single_product(

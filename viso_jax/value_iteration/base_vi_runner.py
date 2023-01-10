@@ -49,9 +49,9 @@ class ValueIterationRunner:
         # Manual updates tp any parameters will not be reflected in output unless
         # set-up is rerun
 
-        log.info(f"Devices: {jax.devices()}")
-
         log.info("Starting setup")
+
+        log.info(f"Devices: {jax.devices()}")
 
         # Vmap and/or JIT methods
         self.deterministic_transition_function_vmap_random_outcomes = jax.vmap(
@@ -83,18 +83,14 @@ class ValueIterationRunner:
             self.extract_policy_scan_state_batches, in_axes=((None, None, None), 0)
         )
 
-        log.info("Vmapped and jitted basic functions")
-
         # Hook for custom setup in subclasses
         self._setup_before_states_actions_random_outcomes_created()
 
         # Get the states as tuples initially so they can be used to get state_to_idx_mapping
         # before being converted to a jax.numpy array
-        log.info("Starting to create states array")
         self.state_tuples, self.state_component_idx_dict = self.generate_states()
         self.state_to_idx_mapping = self.create_state_to_idx_mapping()
         self.states = jnp.array(np.array(self.state_tuples))
-        log.info("Created states array")
 
         self.n_devices = len(jax.devices())
         self.batch_size = min(
@@ -115,27 +111,21 @@ class ValueIterationRunner:
             )
 
         # Get the possible actions
-        log.info("Starting to create actions array")
         self.actions, self.action_labels = self.generate_actions()
-        log.info("Created actions array")
 
-        log.info("Starting to create random outcomes array")
         # Generate the possible random outcomes
         # The method get_probabilities() return the probability of each occurring from a provided state
         (
             self.possible_random_outcomes,
             self.pro_component_idx_dict,
         ) = self.generate_possible_random_outcomes()
-        log.info("Created random outcomes array")
 
         # Hook for custom setup in subclasses
         self._setup_after_states_actions_random_outcomes_created()
 
         if not self.resume_from_checkpoint:
             # Initialise the value function
-            log.info("Calculating initial values")
             self.V_old = self.calculate_initial_values()
-            log.info("Calculated initial values")
             self.iteration = 1  # start at iteration 1
         else:
             # Allow basic loading of checkpoint for resumption
