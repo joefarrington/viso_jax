@@ -15,4 +15,3 @@ epsilon: 1e-4
 gamma: 0.99
 checkpoint_frequency: 100  # Zero for no checkpoints
 resume_from_checkpoint: False
-use_pmap: True

@@ -35,7 +35,6 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
         gamma=1,
         checkpoint_frequency=0,  # Zero for no checkpoints, otherwise every x iterations
         resume_from_checkpoint=False,  # Set to checkpoint file path to restore
-        use_pmap=True,
     ):
         self.max_useful_life = max_useful_life
         self.demand_poisson_mean_a = demand_poisson_mean_a
@@ -62,8 +61,6 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
             self.cp_path.mkdir(parents=True, exist_ok=True)
 
         self.resume_from_checkpoint = resume_from_checkpoint
-
-        self.use_pmap = use_pmap
 
         self.setup()
         log.info(f"Output file directory: {Path.cwd()}")
@@ -221,29 +218,17 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
         return (probs_1 + probs_2 + probs_3 + probs_4).reshape(-1)
 
     def calculate_initial_values(self):
-        if self.use_pmap:
-            padded_batched_initial_ordering_costs = (
-                self._calculate_initial_ordering_cost_scan_state_batches_pmap(
-                    None, self.padded_batched_states
-                )
+        padded_batched_initial_ordering_costs = (
+            self._calculate_initial_ordering_cost_scan_state_batches_pmap(
+                None, self.padded_batched_states
             )
-            padded_batched_expected_sales_revenue = (
-                self._calculate_expected_sales_revenue_scan_state_batches_pmap(
-                    None, self.padded_batched_states
-                )
+        )
+        padded_batched_expected_sales_revenue = (
+            self._calculate_expected_sales_revenue_scan_state_batches_pmap(
+                None, self.padded_batched_states
             )
+        )
 
-        else:
-            padded_batched_initial_ordering_costs = (
-                self._calculate_initial_ordering_cost_scan_state_batches(
-                    None, self.padded_batched_states
-                )
-            )
-            padded_batched_expected_sales_revenue = (
-                self._calculate_expected_sales_revenue_scan_state_batches(
-                    None, self.padded_batched_states
-                )
-            )
         initial_ordering_costs = self._unpad(
             padded_batched_initial_ordering_costs.reshape(-1), self.n_pad
         )
@@ -556,7 +541,6 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
             "state_component_idx_dict": self.state_component_idx_dict,
             "pro_component_idx_dict": self.pro_component_idx_dict,
             "n_pad": self.n_pad,
-            "use_pmap": self.use_pmap,
         }  # static values
         return (children, aux_data)
 

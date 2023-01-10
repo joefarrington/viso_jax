@@ -27,7 +27,6 @@ class ValueIterationRunner:
         gamma,
         checkpoint_frequency,
         resume_from_checkpoint,
-        use_pmap=True,
     ):
         self.max_batch_size = max_batch_size
         self.epsilon = epsilon
@@ -40,7 +39,6 @@ class ValueIterationRunner:
             self.cp_path.mkdir(parents=True, exist_ok=True)
 
         self.resume_from_checkpoint = resume_from_checkpoint
-        self.use_pmap = use_pmap
         self.setup()
         pass
 
@@ -97,18 +95,10 @@ class ValueIterationRunner:
             self.max_batch_size, math.ceil(len(self.states) / self.n_devices)
         )
 
-        if self.use_pmap:
-            # Reshape states into devices x n_batches x batch_size x state_dim
-            (
-                self.padded_batched_states,
-                self.n_pad,
-            ) = self._pad_and_batch_states_for_pmap(
-                self.states, self.batch_size, self.n_devices
-            )
-        else:
-            self.padded_batched_states, self.n_pad = self._pad_and_batch_states_no_pmap(
-                self.states, self.batch_size
-            )
+        # Reshape states into devices x n_batches x batch_size x state_dim
+        self.padded_batched_states, self.n_pad = self._pad_and_batch_states_for_pmap(
+            self.states, self.batch_size, self.n_devices
+        )
 
         # Get the possible actions
         self.actions, self.action_labels = self.generate_actions()
@@ -303,20 +293,11 @@ class ValueIterationRunner:
         log.info(f"Starting value iteration at iteration {self.iteration}")
 
         for i in range(self.iteration, max_iter + 1):
-            # There is probably a more JAX-appropriate way to do this
-            # loop, which we need when we cannot vmap over all the states
-            # at once, but this way means we don't have to make sure all the batches
-            # are exactly the same size. Works well in practice.
-            if self.use_pmap:
-                padded_batched_V = self.calculate_updated_value_scan_state_batches_pmap(
-                    (self.actions, self.possible_random_outcomes, self.V_old),
-                    self.padded_batched_states,
-                )
-            else:
-                padded_batched_V = self.calculate_updated_value_scan_state_batches(
-                    (self.actions, self.possible_random_outcomes, self.V_old),
-                    self.padded_batched_states,
-                )
+            padded_batched_V = self.calculate_updated_value_scan_state_batches_pmap(
+                (self.actions, self.possible_random_outcomes, self.V_old),
+                self.padded_batched_states,
+            )
+
             V = self._unpad(padded_batched_V.reshape(-1), self.n_pad)
 
             # Check for convergence
@@ -348,26 +329,17 @@ class ValueIterationRunner:
 
             # Find that a smaller batch size required for this part
             policy_batch_size = self.batch_size // 2
-            if self.use_pmap:
-                (
-                    self.padded_batched_states,
-                    self.n_pad,
-                ) = self._pad_and_batch_states_for_pmap(
-                    self.states, policy_batch_size, self.n_devices
-                )
-                best_action_idxs_padded = self.extract_policy_scan_state_batches_pmap(
-                    (self.actions, self.possible_random_outcomes, V),
-                    self.padded_batched_states,
-                )
-            else:
-                (
-                    self.padded_batched_states,
-                    self.n_pad,
-                ) = self._pad_and_batch_states_no_pmap(self.states, policy_batch_size)
-                best_action_idxs_padded = self.extract_policy_scan_state_batches(
-                    (self.actions, self.possible_random_outcomes, V),
-                    self.padded_batched_states,
-                )
+
+            (
+                self.padded_batched_states,
+                self.n_pad,
+            ) = self._pad_and_batch_states_for_pmap(
+                self.states, policy_batch_size, self.n_devices
+            )
+            best_action_idxs_padded = self.extract_policy_scan_state_batches_pmap(
+                (self.actions, self.possible_random_outcomes, V),
+                self.padded_batched_states,
+            )
             best_action_idxs = self._unpad(
                 best_action_idxs_padded.reshape(-1), self.n_pad
             )
@@ -433,7 +405,6 @@ class ValueIterationRunner:
             "state_component_idx_dict": self.state_component_idx_dict,
             "pro_component_idx_dict": self.pro_component_idx_dict,
             "n_pad": self.n_pad,
-            "use_pmap": self.use_pmap,
         }  # static values
         return (children, aux_data)
 

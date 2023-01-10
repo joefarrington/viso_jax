@@ -16,4 +16,3 @@ epsilon: 1e-4
 gamma: ${scenario_settings.gamma}
 checkpoint_frequency: 1  # Zero for no checkpoints
 resume_from_checkpoint: False
-use_pmap: True

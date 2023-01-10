@@ -39,8 +39,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         epsilon,
         gamma=1,
         checkpoint_frequency=1,  # Zero for no checkpoints, otherwise every x iterations
-        resume_from_checkpoint=False,
-        use_pmap=False,  # Set to checkpoint file path to restore
+        resume_from_checkpoint=False,  # Set to checkpoint file path to restore
     ):
 
         if self.is_shelf_life_at_arrival_distribution_valid(
@@ -84,8 +83,6 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
             self.cp_path.mkdir(parents=True, exist_ok=True)
 
         self.resume_from_checkpoint = resume_from_checkpoint
-
-        self.use_pmap = use_pmap
 
         self.weekdays = {
             0: "monday",
@@ -437,7 +434,6 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
             "state_component_idx_dict": self.state_component_idx_dict,
             "pro_component_idx_dict": self.pro_component_idx_dict,
             "n_pad": self.n_pad,
-            "use_pmap": self.use_pmap,
             "weekdays": self.weekdays,
         }
 

@@ -31,7 +31,6 @@ class DeMoorPerishableVIR(ValueIterationRunner):
         gamma=1,
         checkpoint_frequency=1,  # Zero for no checkpoints, otherwise every x iterations
         resume_from_checkpoint=False,  # Set to checkpoint file path to restore
-        use_pmap=True,
     ):
 
         self.max_demand = max_demand
@@ -76,8 +75,6 @@ class DeMoorPerishableVIR(ValueIterationRunner):
             self.cp_path.mkdir(parents=True, exist_ok=True)
 
         self.resume_from_checkpoint = resume_from_checkpoint
-
-        self.use_pmap = use_pmap
 
         self.setup()
         log.info(f"Output file directory: {Path.cwd()}")
@@ -277,7 +274,6 @@ class DeMoorPerishableVIR(ValueIterationRunner):
             "state_component_idx_dict": self.state_component_idx_dict,
             "pro_component_idx_dict": self.pro_component_idx_dict,
             "n_pad": self.n_pad,
-            "use_pmap": self.use_pmap,
         }
 
     @classmethod
