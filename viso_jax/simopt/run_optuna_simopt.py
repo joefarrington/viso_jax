@@ -33,7 +33,7 @@ def simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval):
     ):
         trials = []
         policy_params = []
-        log.info(f"Round {i}: Suggesting parameters.")
+        log.info(f"Round {i}: Suggesting parameters")
         num_parallel_trials = min(
             len(sampler._get_unvisited_grid_ids(study)),
             cfg.param_search.max_parallel_trials,
@@ -54,9 +54,9 @@ def simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval):
                 ).reshape(policy.params_shape)
             )
         policy_params = jnp.array(policy_params)
-        log.info(f"Round {i}: Simulating rollouts.")
+        log.info(f"Round {i}: Simulating rollouts")
         rollout_results = rollout_wrapper.population_rollout(rng_eval, policy_params)
-        log.info(f"Round {i}: Processing results.")
+        log.info(f"Round {i}: Processing results")
         objectives = rollout_results["reward"].mean(axis=(-2, -1))
 
         for idx in range(num_parallel_trials):
@@ -164,11 +164,13 @@ def main(cfg):
     policy_params = jnp.array(best_params)
     rollout_results = rollout_wrapper.batch_rollout(rng_eval, policy_params)
     evaluation_output_df = create_evaluation_output_summary(cfg, rollout_results)
-    evaluation_output_df.to_csv("best_policy_evaluation_output.csv")
 
     log.info(f"Results from running best heuristic policy in simulation:")
     for k, v in dict(evaluation_output_df).items():
         log.info(f"{k}: {v[0]:.4f}")
+
+    evaluation_output_df.to_csv("best_heuristic_policy_evaluation_output.csv")
+    log.info("Evaluation output saved")
 
 
 if __name__ == "__main__":

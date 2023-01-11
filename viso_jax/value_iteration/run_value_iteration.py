@@ -45,14 +45,17 @@ def main(cfg):
         )
         rollout_results = rollout_wrapper.batch_rollout(rng_eval, policy_params)
         evaluation_output_df = create_evaluation_output_summary(cfg, rollout_results)
+
+        log.info(f"Results from running VI policy in simulation:")
+        for k, v in dict(evaluation_output_df).items():
+            log.info(f"{k}: {v[0]:.4f}")
+
         evaluation_output_df.to_csv("vi_policy_evaluation_output.csv")
+        log.info("Evaluation output saved")
 
         eval_complete_time = datetime.now()
         eval_run_time = eval_complete_time - vi_complete_time
         log.info(f"Evaluation duration: {(eval_run_time).total_seconds():.2f}s")
-        log.info(f"Results from running VI policy in simulation:")
-        for k, v in dict(evaluation_output_df).items():
-            log.info(f"{k}: {v[0]:.4f}")
 
 
 if __name__ == "__main__":
