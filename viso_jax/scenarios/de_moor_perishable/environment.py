@@ -220,10 +220,13 @@ class DeMoorPerishableGymnax(environment.Environment):
         # [O, X], in_transit and in_stock, stock ages left to right
         if params is None:
             params = self.default_params
+        obs_len = self.max_useful_life + self.lead_time - 1
+        low = jnp.array([0] * obs_len)
+        high = jnp.array([self.max_order_quantity] * obs_len)
         return spaces.Box(
-            0,
-            self.max_order_quantity,
-            (self.max_useful_life + self.lead_time - 1,),
+            low,
+            high,
+            (obs_len,),
             dtype=jnp_int,
         )
 
@@ -252,5 +255,9 @@ class DeMoorPerishableGymnax(environment.Environment):
         wastage = rollout_results["info"]["expiries"].sum(axis=-1) / rollout_results[
             "action"
         ].sum(axis=(-1))
-        holding = rollout_results["info"]["holding"].mean(axis=-1)
-        return {"service_level": service_level, "wastage": wastage, "holding": holding}
+        holding_units = rollout_results["info"]["holding"].mean(axis=-1)
+        return {
+            "service_level_%": service_level * 100,
+            "wastage_%": wastage * 100,
+            "holding_units": holding_units,
+        }

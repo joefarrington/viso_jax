@@ -238,12 +238,13 @@ class HendrixPerishableSubstitutionTwoProductGymnax(environment.Environment):
         """Observation space of the environment."""
         if params is None:
             params = self.default_params
-        low = jnp.array([0] * (2 * self.max_useful_life))
+        obs_len = 2 * self.max_useful_life
+        low = jnp.array([0] * obs_len)
         high = jnp.array(
-            [params.max_order_quantity_a] * self.max_useful_life
-            + [params.max_order_quantity_b] * self.max_useful_life
+            [params.max_order_quantity_a] * obs_len
+            + [params.max_order_quantity_b] * obs_len
         )
-        return spaces.Box(low, high, (len(low),), dtype=jnp_int)
+        return spaces.Box(low, high, (obs_len,), dtype=jnp_int)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
@@ -282,15 +283,15 @@ class HendrixPerishableSubstitutionTwoProductGymnax(environment.Environment):
             axis=-1
         ) / rollout_results["info"]["order_b"].sum(axis=-1)
 
-        holding_a = rollout_results["info"]["holding_a"].mean(axis=-1)
-        holding_b = rollout_results["info"]["holding_b"].mean(axis=-1)
+        holding_units_a = rollout_results["info"]["holding_a"].mean(axis=-1)
+        holding_units_b = rollout_results["info"]["holding_b"].mean(axis=-1)
 
         return {
-            "service_level_a": service_level_a,
-            "service_level_b": service_level_b,
-            "service_level_b_inc_sub": service_level_b_inc_sub,
-            "wastage_a": wastage_a,
-            "wastage_b": wastage_b,
-            "holding_a": holding_a,
-            "holding_b": holding_b,
+            "service_level_%_a": service_level_a * 100,
+            "service_level_%_b": service_level_b * 100,
+            "service_level_%_b_inc_sub": service_level_b_inc_sub * 100,
+            "wastage_%_a": wastage_a * 100,
+            "wastage_%_b": wastage_b * 100,
+            "holding_units_a": holding_units_a,
+            "holding_units_b": holding_units_b,
         }

@@ -260,9 +260,10 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
         # Only need max_useful_life-1 stock entries, because we process expiries before observing and ordering
         if params is None:
             params = self.default_params
-        low = jnp.array([0] * self.max_useful_life)
-        high = jnp.array([6] + [self.max_order_quantity] * (self.max_useful_life - 1))
-        return spaces.Box(low, high, (self.max_useful_life,), dtype=jnp.int32)
+        obs_len = self.max_useful_life
+        low = jnp.array([0] * obs_len)
+        high = jnp.array([6] + [self.max_order_quantity] * (obs_len - 1))
+        return spaces.Box(low, high, (obs_len,), dtype=jnp.int32)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
@@ -289,10 +290,10 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
             "action"
         ].sum(axis=(-1))
 
-        holding = rollout_results["info"]["holding"].mean(axis=-1)
+        holding_units = rollout_results["info"]["holding"].mean(axis=-1)
 
         return {
-            "service_level": service_level,
-            "wastage": wastage,
-            "holding": holding,
+            "service_level_%": service_level * 100,
+            "wastage_%": wastage * 100,
+            "holding_units": holding_units,
         }

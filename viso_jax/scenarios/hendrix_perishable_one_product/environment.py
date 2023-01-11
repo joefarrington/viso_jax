@@ -166,9 +166,10 @@ class HendrixPerishableOneProductGymnax(environment.Environment):
         """Observation space of the environment."""
         if params is None:
             params = self.default_params
-        low = jnp.array([0] * (self.max_useful_life))
-        high = jnp.array([self.max_order_quantity] * self.max_useful_life)
-        return spaces.Box(low, high, (len(low),), dtype=jnp_int)
+        obs_len = self.max_useful_life
+        low = jnp.array([0] * obs_len)
+        high = jnp.array([self.max_order_quantity] * obs_len)
+        return spaces.Box(low, high, (obs_len,), dtype=jnp_int)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
@@ -194,10 +195,10 @@ class HendrixPerishableOneProductGymnax(environment.Environment):
             "action"
         ].sum(axis=(-1))
 
-        holding = rollout_results["info"]["holding"].mean(axis=-1)
+        holding_units = rollout_results["info"]["holding"].mean(axis=-1)
 
         return {
-            "service_level": service_level,
-            "wastage": wastage,
-            "holding": holding,
+            "service_level_%": service_level * 100,
+            "wastage_%": wastage * 100,
+            "holding_units": holding_units,
         }
