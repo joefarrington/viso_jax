@@ -238,13 +238,12 @@ class HendrixPerishableSubstitutionTwoProductGymnax(environment.Environment):
         """Observation space of the environment."""
         if params is None:
             params = self.default_params
-        obs_len = 2 * self.max_useful_life
-        low = jnp.array([0] * obs_len)
+        low = jnp.array([0] * 2 * self.max_useful_life)
         high = jnp.array(
-            [params.max_order_quantity_a] * obs_len
-            + [params.max_order_quantity_b] * obs_len
+            [params.max_order_quantity_a] * self.max_useful_life
+            + [params.max_order_quantity_b] * self.max_useful_life
         )
-        return spaces.Box(low, high, (obs_len,), dtype=jnp_int)
+        return spaces.Box(low, high, (2 * self.max_useful_life,), dtype=jnp_int)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
