@@ -13,19 +13,9 @@ log = logging.getLogger(__name__)
 
 
 def create_evaluation_output_summary(cfg, rollout_results):
-    log_dict = OmegaConf.to_container(
-        cfg.rollout_wrapper.env_kwargs
-    ) | OmegaConf.to_container(cfg.rollout_wrapper.env_params)
-    log_dict = {
-        k: str(v) for k, v in log_dict.items()
-    }  # Convert values to string so any arrays can be stored in one df row
-    log_dict["seed"] = cfg.evaluation.seed
-    log_dict["num_rollouts"] = cfg.evaluation.num_rollouts
-    log_dict["env_id"] = cfg.rollout_wrapper.env_id
-    log_dict["num_burnin_steps"] = cfg.rollout_wrapper.num_burnin_steps
-    log_dict["num_env_steps"] = cfg.rollout_wrapper.num_env_steps
-    log_dict["mean_cumulative_return"] = rollout_results["cum_return"].mean()
+    log_dict = {}
     log_dict["mean_daily_undiscounted_reward"] = rollout_results["reward"].mean()
+    log_dict["mean_cumulative_discounted_return"] = rollout_results["cum_return"].mean()
 
     kpi_function = get_kpi_function(cfg.rollout_wrapper.env_id)
     kpis_per_rollout = kpi_function(rollout_results=rollout_results)
