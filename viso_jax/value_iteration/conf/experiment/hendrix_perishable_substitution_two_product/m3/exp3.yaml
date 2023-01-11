@@ -3,3 +3,4 @@
 defaults:
   - override /vi_runner: hendrix_perishable_substitution_two_product
   - override /scenario_settings: hendrix_perishable_substitution_two_product/m3/exp3
+  - override /rollout_wrapper: hendrix_perishable_substitution_two_product

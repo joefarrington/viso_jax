@@ -2,6 +2,8 @@ defaults:
   - _self_
   - scenario_settings: de_moor_perishable_base_settings
   - vi_runner: de_moor_perishable
+  - rollout_wrapper: de_moor_perishable
+  - policy: value_iteration_policy
 
 hydra:
   job:
@@ -21,3 +23,8 @@ run_settings:
 
 jax_settings:
   double_precision: True
+
+evaluation:
+  perform_eval: True
+  seed: 78
+  num_rollouts: 500
