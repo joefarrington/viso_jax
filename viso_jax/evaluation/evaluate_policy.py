@@ -3,9 +3,6 @@ from omegaconf import OmegaConf
 import logging
 import pandas as pd
 import jax
-import jax.numpy as jnp
-import gymnax
-import viso_jax
 from viso_jax.utils.kpis import get_kpi_function
 
 # Enable logging
@@ -13,14 +10,30 @@ log = logging.getLogger(__name__)
 
 
 def create_evaluation_output_summary(cfg, rollout_results):
+
+    log.info(
+        f"Evaluating policy with {cfg.evaluation.num_rollouts} rollouts, each {cfg.rollout_wrapper.num_env_steps} steps long after a burn-in period of {cfg.rollout_wrapper.num_burnin_steps} steps"
+    )
+
     log_dict = {}
-    log_dict["mean_daily_undiscounted_reward"] = rollout_results["reward"].mean()
-    log_dict["mean_cumulative_discounted_return"] = rollout_results["cum_return"].mean()
+    log_dict["daily_undiscounted_reward_mean"] = rollout_results[
+        "reward"
+    ].mean()  # Equivalent to calculation mean for each rollout, then mean of those
+    log_dict["daily_undiscounted_reward_std"] = (
+        rollout_results["reward"].mean(axis=-1).std()
+    )  # Calc mean for each rollout, then std of those
+    log_dict["cumulative_discounted_return_mean"] = rollout_results[
+        "cum_return"
+    ].mean()  # One per rollout
+    log_dict["cumulative_discounted_return_std"] = rollout_results[
+        "cum_return"
+    ].std()  # One per rollout
 
     kpi_function = get_kpi_function(cfg.rollout_wrapper.env_id)
     kpis_per_rollout = kpi_function(rollout_results=rollout_results)
-    kpi_dict = {k: v.mean() for k, v in kpis_per_rollout.items()}
-    log_dict = log_dict | kpi_dict
+    for k, v in kpis_per_rollout.items():
+        log_dict[f"{k}_mean"] = v.mean()
+        log_dict[f"{k}_std"] = v.std()
     return pd.DataFrame(log_dict, index=[0])
 
 
