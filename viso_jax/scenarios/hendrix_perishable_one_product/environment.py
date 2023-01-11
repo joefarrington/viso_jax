@@ -50,7 +50,7 @@ class HendrixPerishableOneProductGymnax(environment.Environment):
     def __init__(self, max_useful_life: int = 2, max_order_quantity: int = 20):
         super().__init__()
         self.max_useful_life = max_useful_life
-        self.max_oder_quantity = max_order_quantity
+        self.max_order_quantity = max_order_quantity
 
     @property
     def default_params(self) -> EnvParams:
@@ -167,7 +167,7 @@ class HendrixPerishableOneProductGymnax(environment.Environment):
         if params is None:
             params = self.default_params
         low = jnp.array([0] * (self.max_useful_life))
-        high = jnp.array([params.max_order_quantity] * self.max_useful_life)
+        high = jnp.array([self.max_order_quantity] * self.max_useful_life)
         return spaces.Box(low, high, (len(low),), dtype=jnp_int)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
@@ -177,7 +177,7 @@ class HendrixPerishableOneProductGymnax(environment.Environment):
         return spaces.Dict(
             {
                 "stock": spaces.Box(
-                    0, params.max_order_quantity, (self.max_useful_life,), jnp_int
+                    0, self.max_order_quantity, (self.max_useful_life,), jnp_int
                 ),
                 "step": spaces.Discrete(params.max_steps_in_episode),
             }

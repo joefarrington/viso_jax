@@ -222,7 +222,7 @@ class DeMoorPerishableGymnax(environment.Environment):
             params = self.default_params
         return spaces.Box(
             0,
-            params.max_order_quantity,
+            self.max_order_quantity,
             (self.max_useful_life + self.lead_time - 1,),
             dtype=jnp_int,
         )
