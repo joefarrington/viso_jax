@@ -70,7 +70,7 @@ def simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval):
                 break
 
         log.info(
-            f"Round {i} complete. Best params: {study.best_params}, mean daily_reward: {study.best_value}"
+            f"Round {i} complete. Best params: {study.best_params}, mean daily_reward: {study.best_value:.4f}"
         )
         i += 1
     return study
@@ -85,7 +85,7 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
     for i in range(1, cfg.param_search.max_iterations + 1):
         trials = []
         policy_params = []
-        log.info(f"Round {i}: Suggesting parameters.")
+        log.info(f"Round {i}: Suggesting parameters")
         for j in range(cfg.param_search.max_parallel_trials):
             trial = study.ask()
             trials.append(trial)
@@ -102,9 +102,9 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
                 ).reshape(policy.params_shape)
             )
         policy_params = jnp.array(policy_params)
-        log.info(f"Round {i}: Simulating rollouts.")
+        log.info(f"Round {i}: Simulating rollouts")
         rollout_results = rollout_wrapper.population_rollout(rng_eval, policy_params)
-        log.info(f"Round {i}: Processing results.")
+        log.info(f"Round {i}: Processing results")
         objectives = rollout_results["reward"].mean(axis=(-2, -1))
 
         for idx in range(cfg.param_search.max_parallel_trials):
@@ -115,7 +115,7 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
             study.tell(trials[idx], objectives[idx])
 
         log.info(
-            f"Round {i} complete. Best params: {study.best_params}, mean daily_reward: {study.best_value}"
+            f"Round {i} complete. Best params: {study.best_params}, mean daily_reward: {study.best_value:.4f}"
         )
 
     return study
@@ -135,6 +135,10 @@ def main(cfg):
         study = simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval)
     else:
         study = simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval)
+
+    log.info(
+        f"Simulation optimization complete. Best params: {study.best_params}, mean daily_reward: {study.best_value:.4f}"
+    )
 
     best_trial_idx = study.best_trial.number
     trials_df = study.trials_dataframe()
@@ -159,10 +163,12 @@ def main(cfg):
     )
     policy_params = jnp.array(best_params)
     rollout_results = rollout_wrapper.batch_rollout(rng_eval, policy_params)
-    evaluation_output = create_evaluation_output_summary(cfg, rollout_results)
-    evaluation_output.to_csv("best_policy_evaluation_output.csv")
+    evaluation_output_df = create_evaluation_output_summary(cfg, rollout_results)
+    evaluation_output_df.to_csv("best_policy_evaluation_output.csv")
 
-    log.info("Search completed and results saved")
+    log.info(f"Results from running best heuristic policy in simulation:")
+    for k, v in dict(evaluation_output_df).items():
+        log.info(f"{k}: {v[0]:.4f}")
 
 
 if __name__ == "__main__":

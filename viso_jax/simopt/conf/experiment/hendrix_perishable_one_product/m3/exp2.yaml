@@ -5,5 +5,7 @@ defaults:
   - override /scenario_settings: hendrix_perishable_one_product/m3/exp2
   - override /policy: waste_conscious_S_policy
 
+exp_name: hendrix_perishable_one_product/m3/exp2
+
 scenario_settings:
   max_order_quantity: 20

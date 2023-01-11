@@ -5,6 +5,8 @@ defaults:
   - override /scenario_settings: mirjalili_perishable_platelet/m3/endo1
   - override /policy: sS_policy
 
+exp_name: mirjalili_perishable_platelet/m3/endo1
+
 param_search:
   sampler:
     _target_: optuna.samplers.NSGAIISampler

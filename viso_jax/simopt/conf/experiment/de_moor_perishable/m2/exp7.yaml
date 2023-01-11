@@ -3,3 +3,5 @@
 defaults:
   - override /rollout_wrapper: de_moor_perishable
   - override /scenario_settings: de_moor_perishable/m2/exp7
+
+exp_name: de_moor_perishable/m2/exp7
