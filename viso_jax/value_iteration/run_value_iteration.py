@@ -24,7 +24,7 @@ def main(cfg):
 
     vi_complete_time = datetime.now()
     vi_run_time = vi_complete_time - start_time
-    log.info(f"Value iteration duration: {(vi_run_time).total_seconds():.2}s")
+    log.info(f"Value iteration duration: {(vi_run_time).total_seconds():.2f}s")
 
     if cfg.evaluation.perform_eval:
         # Simulation doesn't need to be in double precision
