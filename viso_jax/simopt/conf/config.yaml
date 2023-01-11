@@ -26,6 +26,6 @@ param_search:
 
 evaluation:
   seed: 78
-  num_rollouts: 200
+  num_rollouts: 500
 
 
