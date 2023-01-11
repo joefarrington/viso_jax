@@ -8,12 +8,16 @@ defaults:
 hydra:
   job:
     chdir: True
+  run:
+    dir: outputs/${exp_name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   searchpath:
       # Search paths assume that run_value_iteration.py will be run from value_iteration/
     - file://../scenarios/de_moor_perishable/conf
     - file://../scenarios/hendrix_perishable_one_product/conf
     - file://../scenarios/hendrix_perishable_substitution_two_product/conf
     - file://../scenarios/mirjalili_perishable_platelet/conf
+
+exp_name: de_moor_perishable/m2/exp1 # Default settings correspond to this experiment
 
 run_settings:
     max_iter: 5000

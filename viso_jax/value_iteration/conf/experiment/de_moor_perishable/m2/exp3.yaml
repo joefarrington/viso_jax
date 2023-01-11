@@ -3,3 +3,5 @@
 defaults:
   - override /vi_runner: de_moor_perishable
   - override /scenario_settings: de_moor_perishable/m2/exp3
+
+exp_name: de_moor_perishable/m2/exp3
