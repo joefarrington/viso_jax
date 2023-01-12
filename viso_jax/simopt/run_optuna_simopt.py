@@ -12,7 +12,7 @@ from viso_jax.evaluation.evaluate_policy import create_evaluation_output_summary
 # Enable logging
 log = logging.getLogger(__name__)
 
-# Grid sampler is not straightfordly compatible with the ask/tell
+# Grid sampler is not straightforwardly compatible with the ask/tell
 # interface so we need to treat it a bit differently to avoid
 # to avoid duplication and handle RuntimeError
 # https://github.com/optuna/optuna/issues/4121
@@ -61,14 +61,23 @@ def simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval):
 
         for idx in range(num_parallel_trials):
             trials[idx].set_user_attr(
-                "mean_cumulative_discounted_reward",
+                "daily_undiscounted_reward_std",
+                rollout_results["reward"][idx].mean(axis=-1).std(),
+            )
+            trials[idx].set_user_attr(
+                "cumulative_discounted_return_mean",
                 rollout_results["cum_return"][idx].mean(),
+            )
+            trials[idx].set_user_attr(
+                "cumulative_discounted_return_std",
+                rollout_results["cum_return"][idx].std(),
             )
             try:
                 study.tell(trials[idx], objectives[idx])
             except RuntimeError:
                 break
-
+        # Override rollout_results; helps to avoid GPU OOM error on larger problems
+        rollout_results = 0
         log.info(
             f"Round {i} complete. Best params: {study.best_params}, mean daily_reward: {study.best_value:.4f}"
         )
@@ -108,9 +117,17 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
         objectives = rollout_results["reward"].mean(axis=(-2, -1))
 
         for idx in range(cfg.param_search.max_parallel_trials):
+            trials[idx].set_user_sttr(
+                "daily_undiscounted_reward_std",
+                rollout_results["reward"][idx].mean(axis=-1).std(),
+            )
             trials[idx].set_user_attr(
-                "mean_cumulative_discounted_reward",
+                "cumulative_discounted_return_mean",
                 rollout_results["cum_return"][idx].mean(),
+            )
+            trials[idx].set_user_attr(
+                "cumulative_discounted_return_std",
+                rollout_results["cum_return"][idx].std(),
             )
             study.tell(trials[idx], objectives[idx])
 
