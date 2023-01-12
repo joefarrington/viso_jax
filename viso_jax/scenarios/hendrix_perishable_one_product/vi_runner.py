@@ -48,11 +48,7 @@ class HendrixPerishableOneProductVIR(ValueIterationRunner):
         self.resume_from_checkpoint = resume_from_checkpoint
 
         self.setup()
-        log.info(f"Output file directory: {Path.cwd()}")
         log.info(f"Max order quantity: {self.max_order_quantity}")
-        log.info(f"N states = {len(self.states)}")
-        log.info(f"N actions = {len(self.actions)}")
-        log.info(f"N random outcomes = {len(self.possible_random_outcomes)}")
 
     def _setup_before_states_actions_random_outcomes_created(self):
         self.max_stock = self.max_order_quantity * self.max_useful_life

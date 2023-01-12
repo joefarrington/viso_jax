@@ -95,10 +95,6 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         }
 
         self.setup()
-        log.info(f"Output file directory: {Path.cwd()}")
-        log.info(f"N states = {len(self.states)}")
-        log.info(f"N actions = {len(self.actions)}")
-        log.info(f"N random outcomes = {len(self.possible_random_outcomes)}")
 
     def generate_states(self):
 
