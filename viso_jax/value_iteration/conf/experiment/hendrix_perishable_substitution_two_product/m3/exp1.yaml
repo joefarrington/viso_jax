@@ -6,6 +6,3 @@ defaults:
   - override /rollout_wrapper: hendrix_perishable_substitution_two_product
 
 exp_name: hendrix_perishable_substitution_two_product/m3/exp1
-
-vi_runner:
-  max_batch_size: 300
