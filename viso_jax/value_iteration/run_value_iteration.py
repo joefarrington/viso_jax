@@ -4,6 +4,7 @@ from jax.config import config as jax_config
 import hydra
 from viso_jax.evaluation.evaluate_policy import create_evaluation_output_summary
 import jax
+import pandas as pd
 
 # Enable logging
 log = logging.getLogger(__name__)
@@ -25,6 +26,8 @@ def main(cfg):
     vi_complete_time = datetime.now()
     vi_run_time = vi_complete_time - start_time
     log.info(f"Value iteration duration: {(vi_run_time).total_seconds():.2f}s")
+    to_report = vi_output["to_report"]
+    to_report["vi_run_time"] = vi_run_time.total_seconds()
 
     if cfg.evaluation.perform_eval:
         # Simulation doesn't need to be in double precision
@@ -56,6 +59,9 @@ def main(cfg):
         eval_complete_time = datetime.now()
         eval_run_time = eval_complete_time - vi_complete_time
         log.info(f"Evaluation duration: {(eval_run_time).total_seconds():.2f}s")
+        to_report["eval_run_time"] = eval_run_time.total_seconds()
+
+    pd.DataFrame(to_report, index=[0]).to_csv("reportable_properties.csv")
 
 
 if __name__ == "__main__":
