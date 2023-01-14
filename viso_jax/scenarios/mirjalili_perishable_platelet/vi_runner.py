@@ -430,6 +430,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
             "state_component_idx_dict": self.state_component_idx_dict,
             "pro_component_idx_dict": self.pro_component_idx_dict,
             "n_pad": self.n_pad,
+            "output_info": self.output_info,
             "weekdays": self.weekdays,
         }
 

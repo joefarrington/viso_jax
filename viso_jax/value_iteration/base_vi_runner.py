@@ -138,18 +138,23 @@ class ValueIterationRunner:
                 loaded_cp_iteration + 1
             )  # first iteration will be after last one in checkpoint
 
-        # Use this to store elements to be reported in res tables as csv
+        # Use this to store elements to be reported in res tables
         # for easy collation
-        self.to_report = {}
-        self.to_report["N_states"] = len(self.states)
-        self.to_report["N_actions"] = len(self.actions)
-        self.to_report["N_random_outcomes"] = len(self.possible_random_outcomes)
+        self.output_info = {}
+        self.output_info["set_sizes"] = {}
+        self.output_info["set_sizes"]["N_states"] = len(self.states)
+        self.output_info["set_sizes"]["N_actions"] = len(self.actions)
+        self.output_info["set_sizes"]["N_random_outcomes"] = len(
+            self.possible_random_outcomes
+        )
 
         log.info("Setup complete")
         log.info(f"Output file directory: {Path.cwd()}")
-        log.info(f"N states = {self.to_report['N_states']}")
-        log.info(f"N actions = {self.to_report['N_actions']}")
-        log.info(f"N random outcomes = {self.to_report['N_random_outcomes']}")
+        log.info(f"N states = {self.output_info['set_sizes']['N_states']}")
+        log.info(f"N actions = {self.output_info['set_sizes']['N_actions']}")
+        log.info(
+            f"N random outcomes = {self.output_info['set_sizes']['N_random_outcomes']}"
+        )
 
     def _setup_before_states_actions_random_outcomes_created(self):
         # This method will be run during setup before states, actions
@@ -301,6 +306,10 @@ class ValueIterationRunner:
                 f"At least {max_iter} iterations have already been completed"
             )
 
+        # If min_iter greater than max_iter, raise an error
+        if min_iter > max_iter:
+            raise ValueError(f"min_iter must be less than or equal to max_iter")
+
         log.info(f"Starting value iteration at iteration {self.iteration}")
 
         for i in range(self.iteration, max_iter + 1):
@@ -367,7 +376,7 @@ class ValueIterationRunner:
             return {
                 "V": values_df,
                 "policy": best_order_actions_df,
-                "to_report": self.to_report,
+                "output_info": self.output_info,
             }
 
     def extract_policy(self, state, actions, possible_random_outcomes, V):
@@ -420,7 +429,7 @@ class ValueIterationRunner:
             "state_component_idx_dict": self.state_component_idx_dict,
             "pro_component_idx_dict": self.pro_component_idx_dict,
             "n_pad": self.n_pad,
-            "to_report": self.to_report,
+            "output_info": self.output_info,
         }  # static values
         return (children, aux_data)
 

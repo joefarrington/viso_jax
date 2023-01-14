@@ -4,6 +4,7 @@ import logging
 import pandas as pd
 import jax
 from viso_jax.utils.kpis import get_kpi_function
+from viso_jax.utils.yaml import to_yaml
 
 # Enable logging
 log = logging.getLogger(__name__)
@@ -15,26 +16,26 @@ def create_evaluation_output_summary(cfg, rollout_results):
         f"Evaluating policy with {cfg.evaluation.num_rollouts} rollouts, each {cfg.rollout_wrapper.num_env_steps} steps long after a burn-in period of {cfg.rollout_wrapper.num_burnin_steps} steps"
     )
 
-    log_dict = {}
-    log_dict["daily_undiscounted_reward_mean"] = rollout_results[
-        "reward"
-    ].mean()  # Equivalent to calculation mean for each rollout, then mean of those
-    log_dict["daily_undiscounted_reward_std"] = (
+    eval_output = {}
+    eval_output["daily_undiscounted_reward_mean"] = float(
+        rollout_results["reward"].mean()
+    )  # Equivalent to calculation mean for each rollout, then mean of those
+    eval_output["daily_undiscounted_reward_std"] = float(
         rollout_results["reward"].mean(axis=-1).std()
     )  # Calc mean for each rollout, then std of those
-    log_dict["cumulative_discounted_return_mean"] = rollout_results[
-        "cum_return"
-    ].mean()  # One per rollout
-    log_dict["cumulative_discounted_return_std"] = rollout_results[
-        "cum_return"
-    ].std()  # One per rollout
+    eval_output["cumulative_discounted_return_mean"] = float(
+        rollout_results["cum_return"].mean()
+    )  # One per rollout
+    eval_output["cumulative_discounted_return_std"] = float(
+        rollout_results["cum_return"].std()
+    )  # One per rollout
 
     kpi_function = get_kpi_function(cfg.rollout_wrapper.env_id)
     kpis_per_rollout = kpi_function(rollout_results=rollout_results)
     for k, v in kpis_per_rollout.items():
-        log_dict[f"{k}_mean"] = v.mean()
-        log_dict[f"{k}_std"] = v.std()
-    return pd.DataFrame(log_dict, index=[0])
+        eval_output[f"{k}_mean"] = float(v.mean())
+        eval_output[f"{k}_std"] = float(v.std())
+    return eval_output
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
@@ -51,7 +52,7 @@ def main(cfg):
     rollout_results = rollout_wrapper.batch_rollout(rng_eval, policy_params)
 
     evaluation_output = create_evaluation_output_summary(cfg, rollout_results)
-    evaluation_output.to_csv("evaluation_output.csv")
+    to_yaml(evaluation_output, "evaluation_output.yaml")
 
 
 if __name__ == "__main__":

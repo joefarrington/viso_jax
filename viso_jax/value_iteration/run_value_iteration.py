@@ -3,6 +3,7 @@ import logging
 from jax.config import config as jax_config
 import hydra
 from viso_jax.evaluation.evaluate_policy import create_evaluation_output_summary
+from viso_jax.utils.yaml import to_yaml, from_yaml
 import jax
 import pandas as pd
 
@@ -26,8 +27,9 @@ def main(cfg):
     vi_complete_time = datetime.now()
     vi_run_time = vi_complete_time - start_time
     log.info(f"Value iteration duration: {(vi_run_time).total_seconds():.2f}s")
-    to_report = vi_output["to_report"]
-    to_report["vi_run_time"] = vi_run_time.total_seconds()
+    output_info = vi_output["output_info"]
+    output_info["running_times"] = {}
+    output_info["running_times"]["vi_run_time"] = vi_run_time.total_seconds()
 
     if cfg.evaluation.perform_eval:
         # Simulation doesn't need to be in double precision
@@ -47,21 +49,21 @@ def main(cfg):
             cfg.evaluation.num_rollouts,
         )
         rollout_results = rollout_wrapper.batch_rollout(rng_eval, policy_params)
-        evaluation_output_df = create_evaluation_output_summary(cfg, rollout_results)
+        evaluation_output = create_evaluation_output_summary(cfg, rollout_results)
 
         log.info(f"Results from running VI policy in simulation:")
-        for k, v in dict(evaluation_output_df).items():
-            log.info(f"{k}: {v[0]:.4f}")
+        for k, v in evaluation_output.items():
+            log.info(f"{k}: {v:.4f}")
 
-        evaluation_output_df.to_csv("vi_policy_evaluation_output.csv")
-        log.info("Evaluation output saved")
+        output_info["evaluation_output"] = evaluation_output
 
         eval_complete_time = datetime.now()
         eval_run_time = eval_complete_time - vi_complete_time
         log.info(f"Evaluation duration: {(eval_run_time).total_seconds():.2f}s")
-        to_report["eval_run_time"] = eval_run_time.total_seconds()
+        output_info["running_times"]["eval_run_time"] = eval_run_time.total_seconds()
 
-    pd.DataFrame(to_report, index=[0]).to_csv("reportable_properties.csv")
+    to_yaml(output_info, "output_info.yaml")
+    log.info("Output saved")
 
 
 if __name__ == "__main__":
