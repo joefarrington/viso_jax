@@ -384,7 +384,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
             period_deltas += (
                 values_dict[current_iteration - p]
                 - values_dict[current_iteration - p - 1]
-            ) / (gamma ** (period - p))
+            ) / (gamma ** (current_iteration - p - 1))
         min_period_delta = jnp.min(period_deltas)
         max_period_delta = jnp.max(period_deltas)
         return min_period_delta, max_period_delta
