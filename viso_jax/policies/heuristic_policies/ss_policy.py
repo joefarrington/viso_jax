@@ -3,6 +3,7 @@ import numpy as np
 from typing import Optional
 from functools import partial
 import pandas as pd
+from viso_jax.utils.yaml import from_yaml
 
 
 class sSPolicy:
@@ -14,7 +15,7 @@ class sSPolicy:
         policy_params_filepath: Optional[str] = None,
     ):
 
-        self.param_col_names = np.array(["s", "S"])
+        self.param_col_names = ["s", "S"]
         self.param_row_names = None
         if env_id == "DeMoorPerishable":
             self.forward = de_moor_perishable_sS_policy
@@ -39,8 +40,6 @@ class sSPolicy:
                 ]
             )
         else:
-            # If no specified row names, use 0 as row name/index
-            self.param_row_names = [0]
             self.param_names = np.array([self.param_col_names])
 
         self.params_shape = self.param_names.shape
@@ -49,12 +48,16 @@ class sSPolicy:
             self.policy_params = self.load_policy_params(policy_params_filepath)
 
     def load_policy_params(self, filepath):
-        params_df = pd.read_csv(filepath, index_col=0)
-        params = jnp.array(params_df.value)
+        params_dict = from_yaml(filepath)["policy_params"]
+        if self.param_row_names is None:
+            params_df = pd.DataFrame(params_dict, index=[0])
+        else:
+            params_df = pd.DataFrame(params_dict)
+        policy_params = jnp.array(params_df.values)
         assert (
-            params.shape == self.params_shape
-        ), f"Paramters in file do not match expected shape: found {params.shape} and expected {self.params_shape}"
-        return
+            policy_params.shape == self.params_shape
+        ), f"Parameters in file do not match expected shape: found {policy_params.shape} and expected {self.params_shape}"
+        return policy_params
 
 
 def base_sS_policy(s, S, total_stock, policy_params):

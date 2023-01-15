@@ -8,6 +8,7 @@ import jax.numpy as jnp
 import numpy as np
 import gymnax
 from viso_jax.evaluation.evaluate_policy import create_evaluation_output_summary
+from viso_jax.utils.yaml import to_yaml, from_yaml
 
 # Enable logging
 log = logging.getLogger(__name__)
@@ -117,7 +118,7 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
         objectives = rollout_results["reward"].mean(axis=(-2, -1))
 
         for idx in range(cfg.param_search.max_parallel_trials):
-            trials[idx].set_user_sttr(
+            trials[idx].set_user_attr(
                 "daily_undiscounted_reward_std",
                 rollout_results["reward"][idx].mean(axis=-1).std(),
             )
@@ -140,6 +141,7 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg):
+    output_info = {}
     policy = hydra.utils.instantiate(cfg.policy)
     rollout_wrapper = hydra.utils.instantiate(
         cfg.rollout_wrapper, model_forward=policy.forward
@@ -164,12 +166,29 @@ def main(cfg):
     best_trial_df = trials_df.loc[[best_trial_idx]]
     best_trial_df.to_csv("best_trial.csv")
 
+    # Extract best params and add to output_info
+    # We assume here that all parameters are integers
+    # which they should be for the kinds of heuristic
+    # policies we're using
     best_params = np.array([v for v in study.best_params.values()]).reshape(
         policy.params_shape
     )
-    pd.DataFrame(
-        best_params, index=policy.param_row_names, columns=policy.param_col_names
-    ).to_csv("best_params.csv")
+    # If no row labels, we don't want a multi-level dict
+    # so handle separately
+    if policy.param_row_names is None:
+        output_info["policy_params"] = {
+            str(param_name): int(param_value)
+            for param_name, param_value in zip(
+                policy.param_names.flat, best_params.flat
+            )
+        }
+    # If there are row labels, easiest to convert to a dataframe and then into nested dict
+    else:
+        output_info["policy_params"] = pd.DataFrame(
+            best_params,
+            index=policy.param_row_names,
+            columns=policy.param_col_names,
+        ).to_dict()
 
     # Run evaluation for best policy, including computing kpis
     rollout_wrapper = hydra.utils.instantiate(
@@ -180,13 +199,14 @@ def main(cfg):
     )
     policy_params = jnp.array(best_params)
     rollout_results = rollout_wrapper.batch_rollout(rng_eval, policy_params)
-    evaluation_output_df = create_evaluation_output_summary(cfg, rollout_results)
+    evaluation_output = create_evaluation_output_summary(cfg, rollout_results)
 
     log.info(f"Results from running best heuristic policy in simulation:")
-    for k, v in dict(evaluation_output_df).items():
-        log.info(f"{k}: {v[0]:.4f}")
+    for k, v in evaluation_output.items():
+        log.info(f"{k}: {v:.4f}")
 
-    evaluation_output_df.to_csv("best_heuristic_policy_evaluation_output.csv")
+    output_info["evaluation_output"] = evaluation_output
+    to_yaml(output_info, "output_info.yaml")
     log.info("Evaluation output saved")
 
 
