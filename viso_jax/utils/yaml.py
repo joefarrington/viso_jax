@@ -4,7 +4,7 @@ import yaml
 def to_yaml(data, filepath):
     """A function to write to YAML file"""
     with open(filepath, "w") as f:
-        yaml.safe_dump(data, f)
+        yaml.safe_dump(data, f, sort_keys=False)
 
 
 def from_yaml(filepath):
