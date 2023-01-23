@@ -85,17 +85,6 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
             self._calculate_expected_sales_revenue_scan_state_batches, in_axes=(None, 0)
         )
 
-        # jit and vmap function for calculating initial order cost for each state
-        self._calculate_initial_ordering_cost_vmap_states = jax.vmap(
-            self._calculate_initial_ordering_cost
-        )
-        self._calculate_initial_ordering_cost_state_batch_jit = jax.jit(
-            self._calculate_initial_ordering_cost_state_batch
-        )
-        self._calculate_initial_ordering_cost_scan_state_batches_pmap = jax.pmap(
-            self._calculate_initial_ordering_cost_scan_state_batches, in_axes=(None, 0)
-        )
-
         # Pre-compute conditional probability distributions
         self.pu = self._calculate_pu()
         self.pz = self._calculate_pz()
@@ -214,25 +203,16 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
         return (probs_1 + probs_2 + probs_3 + probs_4).reshape(-1)
 
     def calculate_initial_values(self):
-        padded_batched_initial_ordering_costs = (
-            self._calculate_initial_ordering_cost_scan_state_batches_pmap(
-                None, self.padded_batched_states
-            )
-        )
         padded_batched_expected_sales_revenue = (
             self._calculate_expected_sales_revenue_scan_state_batches_pmap(
                 None, self.padded_batched_states
             )
         )
-
-        initial_ordering_costs = self._unpad(
-            padded_batched_initial_ordering_costs.reshape(-1), self.n_pad
-        )
         expected_sales_revenue = self._unpad(
             padded_batched_expected_sales_revenue.reshape(-1), self.n_pad
         )
 
-        return expected_sales_revenue - initial_ordering_costs
+        return expected_sales_revenue
 
     def check_converged(self, iteration, min_iter, V, V_old):
         delta = V - V_old
@@ -442,56 +422,6 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
             padded_batched_states,
         )
         return revenue_padded
-
-    ##### Support functions for self.calculate_initial_values() #####
-    def _calculate_initial_order_quantity(
-        self, stock_by_age, max_order_quantity, demand_poisson_mean
-    ):
-        total_stock = jnp.sum(stock_by_age)
-        comp1 = jnp.where(
-            stock_by_age[-1] - demand_poisson_mean > 0,
-            stock_by_age[-1] - demand_poisson_mean,
-            0,
-        )
-        order_quantity = jnp.where(
-            max_order_quantity - total_stock + comp1 > 0,
-            max_order_quantity - total_stock + comp1,
-            0,
-        )
-        return order_quantity
-
-    def _calculate_initial_ordering_cost(self, state):
-        state_a = jax.lax.dynamic_slice(
-            state,
-            (self.state_component_idx_dict["stock_a_start"],),
-            (self.state_component_idx_dict["stock_a_len"],),
-        )
-        state_b = jax.lax.dynamic_slice(
-            state,
-            (self.state_component_idx_dict["stock_b_start"],),
-            (self.state_component_idx_dict["stock_b_len"],),
-        )
-        cost_a = self.variable_order_cost_a * self._calculate_initial_order_quantity(
-            state_a, self.max_order_quantity_a, self.demand_poisson_mean_a
-        )
-        cost_b = self.variable_order_cost_b * self._calculate_initial_order_quantity(
-            state_b, self.max_order_quantity_b, self.demand_poisson_mean_b
-        )
-        return cost_a + cost_b
-
-    def _calculate_initial_ordering_cost_state_batch(self, carry, batch_of_states):
-        cost = self._calculate_initial_ordering_cost_vmap_states(batch_of_states)
-        return carry, cost
-
-    def _calculate_initial_ordering_cost_scan_state_batches(
-        self, carry, padded_batched_states
-    ):
-        carry, cost_padded = jax.lax.scan(
-            self._calculate_initial_ordering_cost_state_batch_jit,
-            carry,
-            padded_batched_states,
-        )
-        return cost_padded
 
     ##### Utility functions to set up pytree for class #####
     # See https://jax.readthedocs.io/en/latest/faq.html#strategy-3-making-customclass-a-pytree
