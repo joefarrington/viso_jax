@@ -90,10 +90,6 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
     sampler = hydra.utils.instantiate(
         cfg.param_search.sampler, seed=cfg.param_search.seed
     )
-    direction = "maximize"
-    early_stopping = EarlyStoppingCallback(
-        cfg.param_search.early_stopping_rounds, direction=direction
-    )
     study = optuna.create_study(sampler=sampler, direction="maximize")
 
     # Counter for early stopping
