@@ -90,7 +90,14 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
     sampler = hydra.utils.instantiate(
         cfg.param_search.sampler, seed=cfg.param_search.seed
     )
+    direction = "maximize"
+    early_stopping = EarlyStoppingCallback(
+        cfg.param_search.early_stopping_rounds, direction=direction
+    )
     study = optuna.create_study(sampler=sampler, direction="maximize")
+
+    # Counter for early stopping
+    es_counter = 0
 
     for i in range(1, cfg.param_search.max_iterations + 1):
         trials = []
@@ -132,10 +139,23 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
             )
             study.tell(trials[idx], objectives[idx])
 
+        # Override rollout_results; helps to avoid GPU OOM error on larger problems
+        rollout_results = 0
         log.info(
             f"Round {i} complete. Best params: {study.best_params}, mean daily_reward: {study.best_value:.4f}"
         )
-
+        # Perform early stopping starting on the second round
+        if i > 1:
+            if study.best_params == best_params_last_round:
+                es_counter += 1
+            else:
+                es_counter = 0
+        if es_counter >= cfg.param_search.early_stopping_rounds:
+            log.info(
+                f"No change in best parameters for {cfg.param_search.early_stopping_rounds} rounds. Stopping search."
+            )
+            break
+        best_params_last_round = study.best_params
     return study
 
 
