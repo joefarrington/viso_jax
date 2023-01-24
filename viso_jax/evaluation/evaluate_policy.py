@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 def create_evaluation_output_summary(cfg, rollout_results):
 
     log.info(
-        f"Evaluating policy with {cfg.evaluation.num_rollouts} rollouts, each {cfg.rollout_wrapper.num_env_steps} steps long after a burn-in period of {cfg.rollout_wrapper.num_burnin_steps} steps"
+        f"Processing results for {cfg.evaluation.num_rollouts} rollouts, each {cfg.rollout_wrapper.num_env_steps} steps long after a burn-in period of {cfg.rollout_wrapper.num_burnin_steps} steps"
     )
 
     eval_output = {}
