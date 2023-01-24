@@ -1,6 +1,7 @@
 import hydra
 from omegaconf import OmegaConf
 import logging
+from datetime import datetime
 import pandas as pd
 import optuna
 import jax
@@ -157,6 +158,9 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg):
+
+    start_time = datetime.now()
+
     output_info = {}
     policy = hydra.utils.instantiate(cfg.policy)
     rollout_wrapper = hydra.utils.instantiate(
@@ -171,10 +175,6 @@ def main(cfg):
     else:
         study = simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval)
 
-    log.info(
-        f"Simulation optimization complete. Best params: {study.best_params}, mean daily_reward: {study.best_value:.4f}"
-    )
-
     best_trial_idx = study.best_trial.number
     trials_df = study.trials_dataframe()
     trials_df.to_csv("trials.csv")
@@ -182,10 +182,21 @@ def main(cfg):
     best_trial_df = trials_df.loc[[best_trial_idx]]
     best_trial_df.to_csv("best_trial.csv")
 
+    simopt_complete_time = datetime.now()
+    simopt_run_time = simopt_complete_time - start_time
+    log.info(
+        f"Simulation optimization complete. Duration: {(simopt_run_time).total_seconds():.2f}s.  Best params: {study.best_params}, mean daily_reward: {study.best_value:.4f}"
+    )
+    output_info["running_times"] = {}
+    output_info["running_times"]["simopt_run_time"] = simopt_run_time.total_seconds()
+
     # Extract best params and add to output_info
     # We assume here that all parameters are integers
     # which they should be for the kinds of heuristic
     # policies we're using
+
+    log.info("Running evaluation rollouts for the best params")
+
     best_params = np.array([v for v in study.best_params.values()]).reshape(
         policy.params_shape
     )
@@ -216,6 +227,11 @@ def main(cfg):
     policy_params = jnp.array(best_params)
     rollout_results = rollout_wrapper.batch_rollout(rng_eval, policy_params)
     evaluation_output = create_evaluation_output_summary(cfg, rollout_results)
+
+    eval_complete_time = datetime.now()
+    eval_run_time = eval_complete_time - simopt_complete_time
+    log.info(f"Evaluation duration: {(eval_run_time).total_seconds():.2f}s")
+    output_info["running_times"]["eval_run_time"] = eval_run_time.total_seconds()
 
     log.info(f"Results from running best heuristic policy in simulation:")
     for k, v in evaluation_output.items():
