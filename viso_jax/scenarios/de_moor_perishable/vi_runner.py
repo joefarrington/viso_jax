@@ -236,7 +236,13 @@ class DeMoorPerishableVIR(ValueIterationRunner):
         )
         # Want integer demand, so calculate P(d<x+0.5) - P(d<x-0.5), except for 0 demand where use 0 and 0.5
         # This gives us the same results as in Fig 3 of the paper
-        return jnp.diff(cdf)
+        demand_probabilities = jnp.diff(cdf)
+        # To make number of random outcomes finite, we truncate the distribution
+        # Add any probability mass that is truncated back to the last demand level
+        demand_probabilities = demand_probabilities.at[-1].add(
+            1 - demand_probabilities.sum()
+        )
+        return demand_probabilities
 
     def _tree_flatten(self):
         children = (

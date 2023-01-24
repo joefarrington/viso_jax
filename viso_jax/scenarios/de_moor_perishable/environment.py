@@ -94,7 +94,11 @@ class DeMoorPerishableGymnax(environment.Environment):
         demand_dist = numpyro.distributions.Gamma(
             concentration=params.demand_gamma_alpha, rate=params.demand_gamma_beta
         )
-        demand = jnp.round(demand_dist.sample(key=key)).astype(jnp_int)
+        demand = (
+            jnp.round(demand_dist.sample(key=key))
+            .clip(0, params.max_demand)  # Truncate at max demand
+            .astype(jnp_int)
+        )
 
         # Meet demand
         stock_after_issue = jax.lax.cond(
