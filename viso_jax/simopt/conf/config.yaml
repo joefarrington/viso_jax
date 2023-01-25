@@ -22,11 +22,13 @@ param_search:
   sampler:
     _target_: optuna.samplers.GridSampler
   max_parallel_trials: 50
-  max_iterations: 30
+  max_iterations: 100
   num_rollouts: 500
   seed: 10
-  param_low: 0
-  param_high: ${scenario_settings.max_order_quantity}
+  search_bounds:
+    all_params:
+      low: 0
+      high: ${scenario_settings.max_order_quantity}
 
 evaluation:
   seed: 78
