@@ -7,9 +7,11 @@ defaults:
 
 exp_name: hendrix_perishable_substitution_two_product/m3/exp1
 
-scenario_settings:
-  max_order_quantity_a: 20
-  max_order_quantity_b: 20
-
 param_search:
-  param_high: 20
+  search_bounds:
+    all_params:
+      high: 30
+  sampler:
+    _target_: optuna.samplers.NSGAIISampler
+    population_size: 50
+  early_stopping_rounds: 5

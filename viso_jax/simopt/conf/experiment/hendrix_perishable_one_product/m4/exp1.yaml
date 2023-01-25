@@ -7,5 +7,7 @@ defaults:
 
 exp_name: hendrix_perishable_one_product/m4/exp1
 
-scenario_settings:
-  max_order_quantity: 25
+param_search:
+  search_bounds:
+    all_params:
+      high: 40

@@ -14,15 +14,56 @@ from viso_jax.utils.yaml import to_yaml, from_yaml
 # Enable logging
 log = logging.getLogger(__name__)
 
+
+def param_search_bounds_from_config(cfg, policy):
+    """Create a search bound dict from the config file"""
+    # Specify search bounds for each parameter
+    if cfg.param_search.search_bounds.all_params is None:
+        try:
+            search_bounds = {
+                p: {
+                    "low": cfg.param_search.search_bounds[p]["low"],
+                    "high": cfg.param_search.search_bounds[p]["high"],
+                }
+                for p in policy.param_names.flat
+            }
+        except:
+            raise ValueError(
+                "Ranges for each parameter must be specified if not using same range for all parameters"
+            )
+    # Otherwise, use the same range for all parameters
+    else:
+        search_bounds = {
+            p: {
+                "low": cfg.param_search.search_bounds.all_params.low,
+                "high": cfg.param_search.search_bounds.all_params.high,
+            }
+            for p in policy.param_names.flat
+        }
+    return search_bounds
+
+
+def grid_search_space_from_config(search_bounds, policy):
+    """Create a grid search space from the search bounds"""
+    search_space = {
+        p: list(
+            range(
+                search_bounds[p]["low"],
+                search_bounds[p]["high"] + 1,
+            )
+        )
+        for p in policy.param_names.flat
+    }
+    return search_space
+
+
 # Grid sampler is not straightforwardly compatible with the ask/tell
 # interface so we need to treat it a bit differently to avoid
 # to avoid duplication and handle RuntimeError
 # https://github.com/optuna/optuna/issues/4121
 def simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval):
-    search_space = {
-        k: list(range(cfg.param_search.param_low, cfg.param_search.param_high + 1))
-        for k in policy.param_names.flat
-    }
+    search_bounds = param_search_bounds_from_config(cfg, policy)
+    search_space = grid_search_space_from_config(search_bounds, policy)
     sampler = hydra.utils.instantiate(
         cfg.param_search.sampler, search_space=search_space, seed=cfg.param_search.seed
     )
@@ -48,8 +89,8 @@ def simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval):
                     [
                         trial.suggest_int(
                             f"{p}",
-                            cfg.param_search.param_low,
-                            cfg.param_search.param_high,
+                            search_bounds[p]["low"],
+                            search_bounds[p]["high"],
                         )
                         for p in policy.param_names.flat
                     ]
@@ -81,13 +122,14 @@ def simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval):
         # Override rollout_results; helps to avoid GPU OOM error on larger problems
         rollout_results = 0
         log.info(
-            f"Round {i} complete. Best params: {study.best_params}, mean daily_reward: {study.best_value:.4f}"
+            f"Round {i} complete. Best params: {study.best_params}, mean daily reward: {study.best_value:.4f}"
         )
         i += 1
     return study
 
 
 def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
+    search_bounds = param_search_bounds_from_config(cfg, policy)
     sampler = hydra.utils.instantiate(
         cfg.param_search.sampler, seed=cfg.param_search.seed
     )
@@ -108,8 +150,8 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
                     [
                         trial.suggest_int(
                             f"{p}",
-                            cfg.param_search.param_low,
-                            cfg.param_search.param_high,
+                            search_bounds[p]["low"],
+                            search_bounds[p]["high"],
                         )
                         for p in policy.param_names.flat
                     ]
@@ -139,7 +181,7 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
         # Override rollout_results; helps to avoid GPU OOM error on larger problems
         rollout_results = 0
         log.info(
-            f"Round {i} complete. Best params: {study.best_params}, mean daily_reward: {study.best_value:.4f}"
+            f"Round {i} complete. Best params: {study.best_params}, mean daily reward: {study.best_value:.4f}"
         )
         # Perform early stopping starting on the second round
         if i > 1:
