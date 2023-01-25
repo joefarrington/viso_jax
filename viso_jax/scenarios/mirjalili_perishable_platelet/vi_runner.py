@@ -40,6 +40,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         gamma=1,
         checkpoint_frequency=1,  # Zero for no checkpoints, otherwise every x iterations
         resume_from_checkpoint=False,  # Set to checkpoint file path to restore
+        periodic_convergence_check=True,  # False to test for convergence of value function
     ):
 
         if self.is_shelf_life_at_arrival_distribution_valid(
@@ -83,6 +84,8 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
             self.cp_path.mkdir(parents=True, exist_ok=True)
 
         self.resume_from_checkpoint = resume_from_checkpoint
+
+        self.periodic_convergence_check = periodic_convergence_check
 
         self.weekdays = {
             0: "monday",
@@ -218,7 +221,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
             )
         )
         jnp_rec_combos = jnp.array(rec_combos)
-        # Exclude any where total received less than max_order_quantity
+        # Exclude any where total received greater than max_order_quantity
         jnp_rec_combos = jnp_rec_combos[
             jnp_rec_combos.sum(axis=1) <= self.max_order_quantity
         ]
@@ -287,6 +290,16 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         return jnp.zeros(len(self.states))
 
     def check_converged(self, iteration, min_iter, V, V_old):
+        # By default, we used periodic convergence check
+        # because we're interested in the policy rather than the value function
+        if self.periodic_convergence_check:
+            return self._check_converged_periodic(iteration, min_iter, V, V_old)
+        else:
+            # But we can also check for convergence of value function itself
+            # as in DeMoor case
+            return self._check_converged_v(iteration, min_iter, V, V_old)
+
+    def _check_converged_periodic(self, iteration, min_iter, V, V_old):
         period = len(self.weekdays.keys())
         if iteration < (period + 1):
             log.info(
@@ -328,6 +341,24 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
             else:
                 log.info(f"Iteration {iteration}, period delta diff: {delta_diff}")
                 return False
+
+    def _check_converged_v(self, iteration, min_iter, V, V_old):
+        # Here we use a discount factor, so
+        # We want biggest change to a value to be less than epsilon
+        # This is a difference conv check to the others
+        max_delta = jnp.max(jnp.abs(V - V_old))
+        if max_delta < self.epsilon:
+            if iteration >= min_iter:
+                log.info(f"Converged on iteration {iteration}")
+                return True
+            else:
+                log.info(
+                    f"Max delta below epsilon on iteration {iteration}, but min iterations not reached"
+                )
+                return False
+        else:
+            log.info(f"Iteration {iteration}, max delta: {max_delta}")
+            return False
 
     def _get_multinomial_logits(self, action):
         c_0 = self.shelf_life_at_arrival_distribution_c_0
@@ -440,3 +471,69 @@ tree_util.register_pytree_node(
     MirjaliliPerishablePlateletVIR._tree_flatten,
     MirjaliliPerishablePlateletVIR._tree_unflatten,
 )
+
+
+class MDet(MirjaliliPerishablePlateletVIR):
+    def generate_possible_random_outcomes(self):
+        possible_random_outcomes = jnp.arange(0, self.max_demand + 1).reshape(-1, 1)
+        pro_component_idx_dict = {}
+        pro_component_idx_dict["demand"] = 0
+
+        return possible_random_outcomes, pro_component_idx_dict
+
+    def get_probabilities(self, state, action, possible_random_outcomes):
+        weekday = state[self.state_component_idx_dict["weekday"]]
+        n = self.weekday_demand_negbin_n[weekday]
+        p = self.weekday_demand_negbin_p[weekday]
+        # tfd NegBin is distribution over successes until observe `total_count` failures,
+        # versus MM thesis where distribtion over failures until certain number of successes
+        # Therefore use 1-p for prob (prob of failure is 1 - prob of success)
+        demand_dist = numpyro.distributions.NegativeBinomialProbs(
+            total_count=n, probs=(1 - p)
+        )
+        demand_probs = jnp.exp(demand_dist.log_prob(jnp.arange(0, self.max_demand + 1)))
+        # Truncate distribution as in Eq 6.23 of thesis
+        # by adding probability mass for demands > max_demand to max_demand
+        demand_probs = demand_probs.at[self.max_demand].add(1 - jnp.sum(demand_probs))
+
+        return demand_probs
+
+    def deterministic_transition_function(self, state, action, random_outcome):
+        demand = random_outcome[self.pro_component_idx_dict["demand"]]
+        opening_stock_after_delivery = jnp.hstack(
+            [
+                action,
+                state[
+                    self.state_component_idx_dict[
+                        "stock_start"
+                    ] : self.state_component_idx_dict["stock_stop"]
+                ],
+            ]
+        )
+        stock_after_issue = self._issue_oufo(opening_stock_after_delivery, demand)
+
+        # Compute variables required to calculate the cost
+        variable_order = action
+        fixed_order = action > 0
+        shortage = jnp.max(
+            jnp.array([demand - jnp.sum(opening_stock_after_delivery), 0])
+        )
+        expiries = stock_after_issue[-1]
+        closing_stock = stock_after_issue[0 : self.max_useful_life - 1]
+        holding = jnp.sum(closing_stock)
+
+        # These components must be in the same order as self.cost_components
+        transition_function_reward_output = jnp.array(
+            [variable_order, fixed_order, shortage, expiries, holding]
+        )
+
+        # Update the weekday
+        next_weekday = (state[self.state_component_idx_dict["weekday"]] + 1) % 7
+
+        next_state = jnp.hstack([next_weekday, closing_stock]).astype(jnp.int32)
+
+        single_step_reward = self._calculate_single_step_reward(
+            state, action, transition_function_reward_output
+        )
+
+        return next_state, single_step_reward

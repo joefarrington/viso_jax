@@ -2,7 +2,7 @@
 
 defaults:
   - override /vi_runner: mirjalili_perishable_platelet
-  - override /scenario_settings: mirjalili_perishable_platelet/m3/endo4
+  - override /scenario_settings: mirjalili_perishable_platelet/m3/exp2
   - override /rollout_wrapper: mirjalili_perishable_platelet
 
-exp_name: mirjalili_perishable_platelet/m3/endo4
+exp_name: mirjalili_perishable_platelet/m3/exp2

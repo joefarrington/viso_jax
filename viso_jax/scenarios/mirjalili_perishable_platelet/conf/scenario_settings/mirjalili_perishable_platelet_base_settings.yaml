@@ -5,7 +5,7 @@ max_demand: 20
 weekday_demand_negbin_n: [3.5, 11.0, 7.2, 11.1, 5.9, 5.5, 2.2]
 weekday_demand_negbin_delta: [5.7, 6.9, 6.5, 6.2, 5.8, 3.3, 3.4]
 shelf_life_at_arrival_distribution_c_0: [1.0, 0.5]
-shelf_life_at_arrival_distribution_c_1: [0.4, 0.8]
+shelf_life_at_arrival_distribution_c_1: [0.0, 0.0]
 variable_order_cost: 0
 fixed_order_cost: 10
 shortage_cost: 20

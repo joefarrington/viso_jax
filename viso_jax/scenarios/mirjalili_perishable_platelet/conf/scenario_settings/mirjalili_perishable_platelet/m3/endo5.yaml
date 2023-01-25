@@ -1,5 +1,0 @@
-# No overrides, the base settings are for m=3, experiment endo 1
-defaults:
-  - mirjalili_perishable_platelet_base_settings
-
-shelf_life_at_arrival_distribution_c_1: [-0.4, -0.8]

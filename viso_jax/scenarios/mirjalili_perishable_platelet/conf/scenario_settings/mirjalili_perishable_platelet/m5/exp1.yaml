@@ -1,0 +1,6 @@
+defaults:
+  - mirjalili_perishable_platelet_base_settings
+
+max_useful_life: 5
+shelf_life_at_arrival_distribution_c_0: [1.6, 2.6, 2.8, 1.6] 
+shelf_life_at_arrival_distribution_c_1: [0, 0, 0, 0]

@@ -291,9 +291,17 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
         ].sum(axis=(-1))
 
         holding_units = rollout_results["info"]["holding"].mean(axis=-1)
+        demand = rollout_results["info"]["demand"].mean(axis=-1)
+        order_q = rollout_results["action"].mean(axis=-1)
+        order_made = (rollout_results["action"] > 0).mean(axis=-1)
 
         return {
             "service_level_%": service_level * 100,
             "wastage_%": wastage * 100,
             "holding_units": holding_units,
+            "demand": demand,
+            "order_quantity": order_q,
+            "wastage_units": rollout_results["info"]["expiries"].mean(axis=-1),
+            "shortage_units": rollout_results["info"]["shortage"].mean(axis=-1),
+            "order_made_%": order_made,
         }

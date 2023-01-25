@@ -1,0 +1,13 @@
+# @package _global_
+
+defaults:
+  - override /vi_runner: mirjalili_perishable_platelet
+  - override /scenario_settings: mirjalili_perishable_platelet/m5/exp1
+  - override /rollout_wrapper: mirjalili_perishable_platelet
+
+exp_name: mirjalili_perishable_platelet/m5/exp1
+
+vi_runner:
+  max_batch_size: 100
+jax_settings:
+  double_precision: False

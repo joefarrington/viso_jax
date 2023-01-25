@@ -1,0 +1,14 @@
+# @package _global_
+
+defaults:
+  - override /rollout_wrapper: mirjalili_perishable_platelet
+  - override /scenario_settings: mirjalili_perishable_platelet/m3/exp1
+  - override /policy: sS_policy
+
+exp_name: mirjalili_perishable_platelet/m3/exp1
+
+param_search:
+  sampler:
+    _target_: optuna.samplers.NSGAIISampler
+    population_size: 50
+  early_stopping_rounds: 5

@@ -1,4 +1,4 @@
-_target_: viso_jax.scenarios.mirjalili_perishable_platelet.vi_runner.MirjaliliPerishablePlateletVIR
+_target_: viso_jax.scenarios.mirjalili_perishable_platelet.vi_runner.MDet
 max_demand: ${scenario_settings.max_demand}
 weekday_demand_negbin_n: ${scenario_settings.weekday_demand_negbin_n}
 weekday_demand_negbin_delta: ${scenario_settings.weekday_demand_negbin_delta}
@@ -16,3 +16,4 @@ epsilon: 1e-4
 gamma: ${scenario_settings.gamma}
 checkpoint_frequency: 1  # Zero for no checkpoints
 resume_from_checkpoint: False
+periodic_convergence_check: True
