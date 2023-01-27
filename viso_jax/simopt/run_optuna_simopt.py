@@ -100,16 +100,16 @@ def simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval):
         log.info(f"Round {i}: Simulating rollouts")
         rollout_results = rollout_wrapper.population_rollout(rng_eval, policy_params)
         log.info(f"Round {i}: Processing results")
-        objectives = rollout_results["reward"].mean(axis=(-2, -1))
+        objectives = rollout_results["cum_return"].mean(axis=(-2, -1))
 
         for idx in range(num_parallel_trials):
             trials[idx].set_user_attr(
-                "daily_undiscounted_reward_std",
-                rollout_results["reward"][idx].mean(axis=-1).std(),
+                "daily_undiscounted_reward_mean",
+                rollout_results["reward"][idx].mean(axis=(-2, -1)),
             )
             trials[idx].set_user_attr(
-                "cumulative_discounted_return_mean",
-                rollout_results["cum_return"][idx].mean(),
+                "daily_undiscounted_reward_std",
+                rollout_results["reward"][idx].mean(axis=-1).std(),
             )
             trials[idx].set_user_attr(
                 "cumulative_discounted_return_std",
@@ -122,7 +122,7 @@ def simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval):
         # Override rollout_results; helps to avoid GPU OOM error on larger problems
         rollout_results = 0
         log.info(
-            f"Round {i} complete. Best params: {study.best_params}, mean daily reward: {study.best_value:.4f}"
+            f"Round {i} complete. Best params: {study.best_params}, mean return: {study.best_value:.4f}"
         )
         i += 1
     return study
@@ -161,16 +161,17 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
         log.info(f"Round {i}: Simulating rollouts")
         rollout_results = rollout_wrapper.population_rollout(rng_eval, policy_params)
         log.info(f"Round {i}: Processing results")
-        objectives = rollout_results["reward"].mean(axis=(-2, -1))
+        print(rollout_results["cum_return"].shape)
+        objectives = rollout_results["cum_return"].mean(axis=-1)
 
         for idx in range(cfg.param_search.max_parallel_trials):
             trials[idx].set_user_attr(
-                "daily_undiscounted_reward_std",
-                rollout_results["reward"][idx].mean(axis=-1).std(),
+                "daily_undiscounted_reward_mean",
+                rollout_results["reward"][idx].mean(axis=(-2, -1)),
             )
             trials[idx].set_user_attr(
-                "cumulative_discounted_return_mean",
-                rollout_results["cum_return"][idx].mean(),
+                "daily_undiscounted_reward_std",
+                rollout_results["reward"][idx].mean(axis=-1).std(),
             )
             trials[idx].set_user_attr(
                 "cumulative_discounted_return_std",
@@ -181,7 +182,7 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
         # Override rollout_results; helps to avoid GPU OOM error on larger problems
         rollout_results = 0
         log.info(
-            f"Round {i} complete. Best params: {study.best_params}, mean daily reward: {study.best_value:.4f}"
+            f"Round {i} complete. Best params: {study.best_params}, mean return: {study.best_value:.4f}"
         )
         # Perform early stopping starting on the second round
         if i > 1:
