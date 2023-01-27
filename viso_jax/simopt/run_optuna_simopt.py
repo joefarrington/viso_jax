@@ -227,7 +227,7 @@ def main(cfg):
     simopt_complete_time = datetime.now()
     simopt_run_time = simopt_complete_time - start_time
     log.info(
-        f"Simulation optimization complete. Duration: {(simopt_run_time).total_seconds():.2f}s.  Best params: {study.best_params}, mean daily_reward: {study.best_value:.4f}"
+        f"Simulation optimization complete. Duration: {(simopt_run_time).total_seconds():.2f}s.  Best params: {study.best_params}, mean return: {study.best_value:.4f}"
     )
     output_info["running_times"] = {}
     output_info["running_times"]["simopt_run_time"] = simopt_run_time.total_seconds()
