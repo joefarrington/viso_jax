@@ -171,9 +171,11 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
         self, key: chex.PRNGKey, params: EnvParams
     ) -> Tuple[chex.Array, EnvState]:
         """Performs resetting of environment."""
-        # Always start on Monday morning with no stock
+        # Always start with no stock, on random weekday
+        # Otherwise, with fixed burn-in, would always count return from same weekday
+        weekday = jax.random.randint(key, (), 0, 7)
         state = EnvState(
-            weekday=0,
+            weekday=weekday,
             stock=jnp.zeros(self.max_useful_life - 1, dtype=jnp.int32),
             step=0,
         )
