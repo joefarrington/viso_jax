@@ -16,7 +16,7 @@ import numpyro
 log = logging.getLogger("ValueIterationRunner")
 
 # This is based on MM PhD thesis
-# Demand expected to be Negative Binomial
+# Demand is Negative Binomial
 # Uncertainity distribution for age on arrival depends on order quantity
 
 
@@ -86,6 +86,10 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         self.resume_from_checkpoint = resume_from_checkpoint
 
         self.periodic_convergence_check = periodic_convergence_check
+        if periodic_convergence_check:
+            assert (
+                self.checkpoint_frequency == 1
+            ), "Checkpoint frequency must be 1 to use periodic convergence check"
 
         self.weekdays = {
             0: "monday",
