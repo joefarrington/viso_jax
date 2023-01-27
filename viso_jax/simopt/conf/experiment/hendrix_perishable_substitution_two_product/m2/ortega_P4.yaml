@@ -1,0 +1,17 @@
+# @package _global_
+
+defaults:
+  - override /rollout_wrapper: hendrix_perishable_substitution_two_product
+  - override /scenario_settings: hendrix_perishable_substitution_two_product/m2/ortega_P4
+  - override /policy: waste_conscious_S_policy
+
+exp_name: hendrix_perishable_substitution_two_product/m2/ortega_P4
+
+param_search:
+  search_bounds:
+    all_params:
+      high: 28
+  sampler:
+    _target_: optuna.samplers.NSGAIISampler
+    population_size: 50
+  early_stopping_rounds: 5

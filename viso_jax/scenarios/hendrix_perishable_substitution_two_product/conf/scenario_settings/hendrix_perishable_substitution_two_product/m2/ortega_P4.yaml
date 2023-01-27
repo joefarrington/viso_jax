@@ -1,10 +1,11 @@
 # Max order quantities differ from those in Table 3 of Ortega et al (2019)
-# but reported order quantities and N states appear not to match up so have used
-# used maximum order quantities calculated using newsvendor rule as in Hendrix et al (2019)
+# but reported order quantities and N states appear not to match up so have
+# assumed max order quantity in that Table is actually number of possible actions
+# (i.e. max order quantity + 1) because this interpretation is consistent with N states
 defaults:
   - hendrix_perishable_substitution_two_product_base_settings
 
 demand_poisson_mean_a: 7.0
 demand_poisson_mean_b: 7.0
-max_order_quantity_a: 14
-max_order_quantity_b: 14
+max_order_quantity_a: 13 # Would be 14 following newsvendor
+max_order_quantity_b: 13 # Would be 14 following newsvendor
