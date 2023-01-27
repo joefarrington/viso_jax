@@ -31,4 +31,4 @@ jax_settings:
 evaluation:
   perform_eval: True
   seed: 78
-  num_rollouts: 1000
+  num_rollouts: 10000

@@ -1,8 +1,8 @@
 defaults:
-  - _self_
   - scenario_settings: de_moor_perishable_base_settings
   - rollout_wrapper: de_moor_perishable
   - policy: S_policy
+  - _self_
 
 hydra:
   job:
@@ -23,7 +23,7 @@ param_search:
     _target_: optuna.samplers.GridSampler
   max_parallel_trials: 50
   max_iterations: 100
-  num_rollouts: 500
+  num_rollouts: 4000
   seed: 10
   search_bounds:
     all_params:
@@ -32,6 +32,6 @@ param_search:
 
 evaluation:
   seed: 78
-  num_rollouts: 1000
+  num_rollouts: 10000
 
 
