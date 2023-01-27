@@ -34,7 +34,7 @@ class EnvParams:
         shortage_cost: float = 5.0,
         wastage_cost: float = 7.0,
         holding_cost: float = 1.0,
-        max_steps_in_episode: int = 3650,
+        max_steps_in_episode: int = 365,
         gamma: float = 0.99,
     ):
         demand_gamma_alpha = 1 / (demand_gamma_cov**2)

@@ -11,5 +11,5 @@ fixed_order_cost: 10
 shortage_cost: 20
 wastage_cost: 5
 holding_cost: 1
-max_steps_in_episode: 3650
+max_steps_in_episode: 365
 gamma: 0.95

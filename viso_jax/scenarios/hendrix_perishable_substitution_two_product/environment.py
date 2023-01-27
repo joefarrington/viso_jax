@@ -43,7 +43,7 @@ class EnvParams:
         sales_price_b: float = 1.0,
         max_order_quantity_a: int = 25,
         max_order_quantity_b: int = 25,
-        max_steps_in_episode: int = 3650,
+        max_steps_in_episode: int = 365,
         gamma: float = 1.0,
     ):
         return cls(

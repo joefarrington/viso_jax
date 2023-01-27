@@ -29,7 +29,7 @@ class EnvParams:
         demand_poisson_mean: float = 5.0,
         variable_order_cost: float = 0.5,
         sales_price: float = 1.0,
-        max_steps_in_episode: int = 3650,
+        max_steps_in_episode: int = 365,
         gamma: float = 1.0,
     ):
         return cls(

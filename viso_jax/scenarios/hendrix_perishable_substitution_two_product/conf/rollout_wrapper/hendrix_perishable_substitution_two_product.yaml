@@ -1,6 +1,6 @@
 _target_: viso_jax.utils.rollout.RolloutWrapper
 env_id: HendrixPerishableSubstitutionTwoProduct
-num_env_steps: 3650
+num_env_steps: ${scenario_settings.max_steps_in_episode}
 num_burnin_steps: 100
 env_kwargs:
   max_useful_life: ${scenario_settings.max_useful_life}

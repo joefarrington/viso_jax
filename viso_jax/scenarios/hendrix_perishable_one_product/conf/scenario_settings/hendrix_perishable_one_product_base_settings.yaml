@@ -4,5 +4,5 @@ max_order_quantity: 10
 demand_poisson_mean: 5.0
 variable_order_cost: 0.5
 sales_price: 1.0
-max_steps_in_episode: 3650
+max_steps_in_episode: 365
 gamma: 1.0
