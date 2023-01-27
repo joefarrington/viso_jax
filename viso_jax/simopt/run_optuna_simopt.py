@@ -161,8 +161,7 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
         log.info(f"Round {i}: Simulating rollouts")
         rollout_results = rollout_wrapper.population_rollout(rng_eval, policy_params)
         log.info(f"Round {i}: Processing results")
-        print(rollout_results["cum_return"].shape)
-        objectives = rollout_results["cum_return"].mean(axis=-1)
+        objectives = rollout_results["cum_return"].mean(axis=(-2, -1))
 
         for idx in range(cfg.param_search.max_parallel_trials):
             trials[idx].set_user_attr(
