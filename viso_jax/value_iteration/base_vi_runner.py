@@ -28,11 +28,15 @@ class ValueIterationRunner:
         resume_from_checkpoint: Union[bool, str],
     ):
         """Base class for running value iteration
-        max_batch_size: Maximum number of states to update in parallel using vmap, will depend on GPU memory
-        epsilon: Convergence criterion for value iteration
-        gamma: Discount factor
-        checkpoint_frequency: Frequency with which to save checkpoints, 0 for no checkpoints
-        resume_from_checkpoint: If False, start from scratch; if filename, resume from checkpoint"""
+
+        Args:
+            max_batch_size: Maximum number of states to update in parallel using vmap, will depend on GPU memory
+            epsilon: Convergence criterion for value iteration
+            gamma: Discount factor
+            checkpoint_frequency: Frequency with which to save checkpoints, 0 for no checkpoints
+            resume_from_checkpoint: If False, start from scratch; if filename, resume from checkpoint
+
+        """
         self.max_batch_size = max_batch_size
         self.epsilon = epsilon
         self.gamma = gamma
@@ -146,11 +150,18 @@ class ValueIterationRunner:
         save_policy: bool = True,
     ) -> dict[str, Union[pd.DataFrame, dict]]:
         """Run value iteration for a given number of iterations, or until convergence. Optionally save checkpoints of the
-        value function after each iteration, and the final value function and policy at the end of the run.
-        max_iter: maximum number of iterations to run
-        min_iter: minimum number of iterations to run, even if convergence is reached before this
-        save_final_values: whether to save the final value function as a csv file
-        save_policy: whether to save the final policy as a csv file"""
+
+        Args:
+            value function after each iteration, and the final value function and policy at the end of the run.
+            max_iter: maximum number of iterations to run
+            min_iter: minimum number of iterations to run, even if convergence is reached before this
+            save_final_values: whether to save the final value function as a csv file
+            save_policy: whether to save the final policy as a csv file
+
+        Returns:
+            A dictionary containing information to log and, optionally, the final value function and policy
+
+        """
 
         # If already run more than max_iter, raise an error
         if self.iteration > max_iter:
@@ -188,12 +199,15 @@ class ValueIterationRunner:
 
             self.iteration += 1
 
+        to_return = {}
+
         # Potentially save down final values and policy
         if save_final_values:
             log.info("Saving final values")
             values_df = pd.DataFrame(V, index=self.state_tuples, columns=["V"])
             values_df.to_csv(f"values_{i}.csv")
             log.info("Final values saved")
+            to_return["V"] = values_df
 
         if save_policy:
             log.info("Extracting and saving policy")
@@ -202,12 +216,11 @@ class ValueIterationRunner:
 
             best_order_actions_df.to_csv("best_order_actions.csv")
             log.info("Policy saved")
+            to_return["policy"] = best_order_actions_df
 
-            return {
-                "V": values_df,
-                "policy": best_order_actions_df,
-                "output_info": self.output_info,
-            }
+        to_return["output_info"] = self.output_info
+
+        return to_return
 
     def get_policy(self) -> pd.DataFrame:
         """Return the best policy based on the currently stored values, self.V_old,
