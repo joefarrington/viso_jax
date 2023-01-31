@@ -2,6 +2,7 @@
 # https://github.com/RobertTLange/gymnax/blob/main/gymnax/registration.py
 # Modified from commit b9f4795
 
+import gymnax
 from viso_jax.environments import (
     DeMoorPerishableGymnax,
     HendrixPerishableOneProductGymnax,
@@ -10,8 +11,8 @@ from viso_jax.environments import (
 )
 
 
-def make(env_id: str, **env_kwargs):
-    """Version of gymnax.make()/OpenAI gym.make for our envs"""
+def make(env_id: str, **env_kwargs) -> tuple[gymnax.env, gymnax.EnvParams]:
+    """Version of gymnax.make/OpenAI gym.make for our envs"""
 
     if env_id not in registered_envs:
         raise ValueError(f"{env_id} is not in registered gymnax environments.")
