@@ -1,5 +1,7 @@
 import hydra
 from omegaconf import OmegaConf
+from omegaconf.dictconfig import DictConfig
+import chex
 import logging
 import pandas as pd
 import jax
@@ -10,7 +12,10 @@ from viso_jax.utils.yaml import to_yaml
 log = logging.getLogger(__name__)
 
 
-def create_evaluation_output_summary(cfg, rollout_results):
+def create_evaluation_output_summary(
+    cfg: DictConfig, rollout_results: dict[str, chex.Array]
+) -> pd.DataFrame:
+    """Create a summary of the evaluation output, including KPIs"""
 
     log.info(
         f"Processing results for {cfg.evaluation.num_rollouts} rollouts, each {cfg.rollout_wrapper.num_env_steps} steps long after a burn-in period of {cfg.rollout_wrapper.num_burnin_steps} steps"
@@ -39,7 +44,8 @@ def create_evaluation_output_summary(cfg, rollout_results):
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
-def main(cfg):
+def main(cfg: DictConfig) -> None:
+    """Evaluate a policy on a given environment"""
 
     policy = hydra.utils.instantiate(cfg.policy)
     policy_params = policy.policy_params
