@@ -184,21 +184,27 @@ class DeMoorPerishableGymnax(environment.Environment):
         transition_function_reward_output: chex.Array,
         params: EnvParams,
     ) -> int:
+        """Calculate reward for a single step transition"""
         cost = jnp.dot(transition_function_reward_output, params.cost_components)
         reward = -1 * cost
         return reward
 
-    def _issue_fifo(self, opening_stock, demand):
+    def _issue_fifo(self, opening_stock: chex.Array, demand: int) -> chex.Array:
+        """Issue stock using FIFO policy"""
         _, remaining_stock = jax.lax.scan(
             self._issue_one_step, demand, opening_stock, reverse=True
         )
         return remaining_stock
 
-    def _issue_lifo(self, opening_stock, demand):
+    def _issue_lifo(self, opening_stock: chex.Array, demand: int) -> chex.Array:
+        """Issue stock using LIFO policy"""
         _, remaining_stock = jax.lax.scan(self._issue_one_step, demand, opening_stock)
         return remaining_stock
 
-    def _issue_one_step(self, remaining_demand, stock_element):
+    def _issue_one_step(
+        self, remaining_demand: int, stock_element: int
+    ) -> Tuple[int, int]:
+        """Fill demand with stock of one age, representing one element in the state"""
         remaining_stock = (stock_element - remaining_demand).clip(0)
         remaining_demand = (remaining_demand - stock_element).clip(0)
         return remaining_demand, remaining_stock
@@ -251,7 +257,7 @@ class DeMoorPerishableGymnax(environment.Environment):
         )
 
     @classmethod
-    def calculate_kpis(cls, rollout_results: dict):
+    def calculate_kpis(cls, rollout_results: dict) -> dict[str, float]:
         """Calculate KPIs for each rollout, using the output of a rollout from RolloutWrapper"""
         service_level = (
             rollout_results["info"]["demand"] - rollout_results["info"]["shortage"]
