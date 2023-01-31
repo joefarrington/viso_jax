@@ -33,13 +33,13 @@ class HendrixPerishableOneProductVIR(ValueIterationRunner):
         resume_from_checkpoint: Union[bool, str] = False,
     ):
 
-        """Class to run value iteration for de_moor_perishable scenario
+        """Class to run value iteration for hendrix_perishable_one_product scenario
 
         Args:
             max_useful_life: maximum useful life of product, m >= 1
             demand_poission_mean: mean of Poisson distribution that models demand
             variable_order_cost: cost per unit ordered
-            sales_price: revenue per units issued to meet demand
+            sales_price: revenue per unit issued to meet demand
             max_order_quantity: maximum order quantity
             max_batch_size: Maximum number of states to update in parallel using vmap, will depend on GPU memory
             epsilon: Convergence criterion for value iteration
