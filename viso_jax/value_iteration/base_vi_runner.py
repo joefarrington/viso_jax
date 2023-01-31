@@ -52,7 +52,7 @@ class ValueIterationRunner:
     #  should also be updated to include any subclass properties
 
     def generate_states(self) -> Tuple[chex.Array, Union[None, dict[str, int]]]:
-        """Return a tuple consisting of an array of all possible states and a dictionary
+        """Returns a tuple consisting of an array of all possible states and a dictionary
         that maps descriptive names of the components of the state to indices that can be
         used to extract them from an individual state.
         The array of states should be of shape (N_states, state_size)
@@ -60,14 +60,14 @@ class ValueIterationRunner:
         raise NotImplementedError
 
     def create_state_to_idx_mapping(self) -> chex.Array:
-        """Return an array that maps from a state (represented as a tuple) to its index
+        """Returns an array that maps from a state (represented as a tuple) to its index
         in the state array
         The array should have the same number of dimensions at the state array and have
         a total number of elements equal to N_states"""
         raise NotImplementedError
 
     def generate_actions(self) -> Tuple[chex.Array, list[str]]:
-        """Return a tuple consisting of an array of all possible actions and a
+        """Returns a tuple consisting of an array of all possible actions and a
         list of descriptive names for each action dimension (e.g. if the action consists
         of order quantities for one product, the list should contain a single string,
         and if it consists of order quantities for two products, the list should contain
@@ -80,7 +80,7 @@ class ValueIterationRunner:
     def generate_possible_random_outcomes(
         self,
     ) -> Tuple[chex.Array, Union[None, dict[str, int]]]:
-        """Return a tuple consisting of an array of all possible random outcomes and a dictionary
+        """Returns a tuple consisting of an array of all possible random outcomes and a dictionary
         that maps descriptive names of the components of a random outcome to indices that can be
         used to extract them from an individual random outcome.
         The random outcome contains all the information that, along with a state and action, makes
@@ -96,7 +96,7 @@ class ValueIterationRunner:
         action: Union[int, chex.Array],
         random_combination: chex.Array,
     ) -> Tuple[chex.Array, float]:
-        """Return the next state and single-step reward for the provided state, action and random combination"""
+        """Returns the next state and single-step reward for the provided state, action and random combination"""
         raise NotImplementedError
 
     def get_probabilities(
@@ -105,19 +105,19 @@ class ValueIterationRunner:
         action: Union[int, chex.Array],
         possible_random_outcomes: chex.Array,
     ) -> chex.Array:
-        """Return an array of the probabilities of each possible random outcome for the provides state-action pair
+        """Returns an array of the probabilities of each possible random outcome for the provides state-action pair
         Output array should be of shape (N_possible_random_outcomes,)"""
         raise NotImplementedError
 
     def calculate_initial_values(self) -> chex.Array:
-        """Calculate the initial values for each state.
+        """Returns an array of the initial values for each state.
         Output array should be of shape (N_states,)"""
         raise NotImplementedError
 
     def check_converged(
         self, iteration: int, min_iter: int, V: chex.Array, V_old: chex.Array
     ) -> bool:
-        """Convergence check to determined whether to stop value iteration"""
+        """Convergence check to determine whether to stop value iteration"""
         raise NotImplementedError
 
     ### End of essential methods to implement in subclass ###
