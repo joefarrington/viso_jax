@@ -3,7 +3,7 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 import chex
 from flax import struct
 from tensorflow_probability.substrates import jax as tfp
@@ -25,6 +25,7 @@ class EnvParams:
     shelf_life_at_arrival_distribution_c_0: chex.Array
     shelf_life_at_arrival_distribution_c_1: chex.Array
     cost_components: chex.Array
+    initial_weekday: int
     max_steps_in_episode: int
     gamma: float
 
@@ -42,6 +43,7 @@ class EnvParams:
         shortage_cost: float = 20.0,
         wastage_cost: float = 5.0,
         holding_cost: float = 1.0,
+        initial_weekday: int = -1,  # -1 means random
         max_steps_in_episode: int = 3650,
         gamma: float = 0.95,
     ):
@@ -57,6 +59,10 @@ class EnvParams:
         weekday_demand_param_p = jnp.array(weekday_demand_negbin_n) / (
             jnp.array(weekday_demand_negbin_delta) + jnp.array(weekday_demand_negbin_n)
         )
+
+        assert initial_weekday in range(
+            -1, 7
+        ), "Initial weekday must be in range 0-6 (Mon-Sun), or -1 to sample on each reset"
         return EnvParams(
             max_demand,
             jnp.array(weekday_demand_negbin_n),
@@ -65,6 +71,7 @@ class EnvParams:
             jnp.array(shelf_life_at_arrival_distribution_c_0),
             jnp.array(shelf_life_at_arrival_distribution_c_1),
             cost_components,
+            initial_weekday,
             max_steps_in_episode,
             gamma,
         )
@@ -76,7 +83,11 @@ jnp_int = jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
 
 
 class MirjaliliPerishablePlateletGymnax(environment.Environment):
-    def __init__(self, max_useful_life: int = 3, max_order_quantity: int = 20):
+    def __init__(
+        self,
+        max_useful_life: int = 3,
+        max_order_quantity: int = 20,
+    ):
         super().__init__()
         self.max_useful_life = max_useful_life
         self.max_order_quantity = max_order_quantity
@@ -119,7 +130,7 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
         demand = (
             demand_dist.sample(seed=demand_key)
             .clip(0, params.max_demand)
-            .astype(jnp.int32)
+            .astype(jnp_int)
         )
 
         # Meet demand
@@ -171,12 +182,20 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
         self, key: chex.PRNGKey, params: EnvParams
     ) -> Tuple[chex.Array, EnvState]:
         """Performs resetting of environment."""
-        # Always start with no stock, on random weekday
-        # Otherwise, with fixed burn-in, would always count return from same weekday
-        weekday = jax.random.randint(key, (), 0, 7)
+        # Always start with no stock
+        # # By defauly, we start on a random weekday
+        # Otherwise, with fixed burn-in, would always
+        # count return from same weekday
+        weekday = jax.lax.cond(
+            params.initial_weekday == -1,
+            lambda _: jax.random.randint(key, (), 0, 7, dtype=jnp_int),
+            lambda _: params.initial_weekday.astype(jnp_int),
+            None,
+        )
+
         state = EnvState(
             weekday=weekday,
-            stock=jnp.zeros(self.max_useful_life - 1, dtype=jnp.int32),
+            stock=jnp.zeros(self.max_useful_life - 1, dtype=jnp_int),
             step=0,
         )
         return self.get_obs(state), state
@@ -195,14 +214,17 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
         """Return cumulative discount factor"""
         return params.gamma**state.step
 
-    def _sample_units_received(self, key: chex.PRNGKey, action: int, params: EnvParams):
+    def _sample_units_received(
+        self, key: chex.PRNGKey, action: int, params: EnvParams
+    ) -> chex.Array:
+        """Sample the remaining useful life of units received in order"""
         # Assume logit for useful_life=1 is 0, concatenate with logits
         # for other ages using provided coefficients and order size action
         multinomial_logits = self._get_multinomial_logits(action, params)
         dist = tfp.distributions.Multinomial(
             logits=multinomial_logits, total_count=action.astype(jnp.float32)
         )
-        sample = dist.sample(seed=key).astype(jnp.int32)
+        sample = dist.sample(seed=key).astype(jnp_int)
         return sample
 
     def _calculate_single_step_reward(
@@ -212,23 +234,29 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
         transition_function_reward_output: chex.Array,
         params: EnvParams,
     ) -> int:
+        """Calculate reward for a single step transition"""
         cost = jnp.dot(transition_function_reward_output, params.cost_components)
         reward = -1 * cost
         return reward
 
-    def _issue_oufo(self, opening_stock, demand):
+    def _issue_oufo(self, opening_stock: chex.Array, demand: int) -> chex.Array:
+        """Issue stock using OUFO policy"""
         # Oldest stock on RHS of vector, so reverse
         _, remaining_stock = jax.lax.scan(
             self._issue_one_step, demand, opening_stock, reverse=True
         )
         return remaining_stock
 
-    def _issue_one_step(self, remaining_demand, stock_element):
+    def _issue_one_step(
+        self, remaining_demand: int, stock_element: int
+    ) -> Tuple[int, int]:
+        """Fill demand with stock of one age, representing one element in the state"""
         remaining_stock = (stock_element - remaining_demand).clip(0)
         remaining_demand = (remaining_demand - stock_element).clip(0)
         return remaining_demand, remaining_stock
 
     def _get_multinomial_logits(self, action, params):
+        """Get logits for multinomial distribution for units received, which may depend on action"""
         c_0 = params.shelf_life_at_arrival_distribution_c_0
         c_1 = params.shelf_life_at_arrival_distribution_c_1
         # Assume logit for useful_life=1 is 0, concatenate with logits
@@ -265,7 +293,7 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
         obs_len = self.max_useful_life
         low = jnp.array([0] * obs_len)
         high = jnp.array([6] + [self.max_order_quantity] * (obs_len - 1))
-        return spaces.Box(low, high, (obs_len,), dtype=jnp.int32)
+        return spaces.Box(low, high, (obs_len,), dtype=jnp_int)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
@@ -275,15 +303,18 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
             {
                 "weekday": spaces.Discrete(7),
                 "stock": spaces.Box(
-                    0, self.max_order_quantity, (self.max_useful_life - 1,), jnp.int32
+                    0,
+                    self.max_order_quantity,
+                    (self.max_useful_life - 1,),
+                    dtype=jnp_int,
                 ),
                 "step": spaces.Discrete(params.max_steps_in_episode),
             }
         )
 
     @classmethod
-    def calculate_kpis(clas, rollout_results: dict):
-        """Calculate KPIs, using the output of a rollout from RolloutWrapper"""
+    def calculate_kpis(cls, rollout_results: dict) -> dict[str, float]:
+        """Calculate KPIs for each rollout, using the output of a rollout from RolloutWrapper"""
         service_level = (
             rollout_results["info"]["demand"] - rollout_results["info"]["shortage"]
         ).sum(axis=-1) / rollout_results["info"]["demand"].sum(axis=-1)

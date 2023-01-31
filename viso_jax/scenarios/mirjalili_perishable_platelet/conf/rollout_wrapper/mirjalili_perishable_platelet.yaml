@@ -16,6 +16,7 @@ env_params:
   shortage_cost: ${scenario_settings.shortage_cost}
   wastage_cost: ${scenario_settings.wastage_cost}
   holding_cost: ${scenario_settings.holding_cost}
+  initial_weekday: ${scenario_settings.initial_weekday}
   max_steps_in_episode: ${scenario_settings.max_steps_in_episode}
   gamma: ${scenario_settings.gamma}
 return_info: False
