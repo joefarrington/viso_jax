@@ -6,6 +6,8 @@ import re
 import logging
 import math
 from pathlib import Path
+from typing import Union, Tuple
+import chex
 
 # Enable logging
 log = logging.getLogger("ValueIterationRunner")
@@ -15,19 +17,17 @@ log = logging.getLogger("ValueIterationRunner")
 # Could restrict to read-only access using properties, or use custom setter to force
 # re-running setup if one is changed.
 
-# TODO: Turn the comment descriptions of each function into proper docstrings
-# and consider adding type hints
-
 
 class ValueIterationRunner:
     def __init__(
         self,
-        max_batch_size,
-        epsilon,
-        gamma,
-        checkpoint_frequency,
-        resume_from_checkpoint,
+        max_batch_size: int,
+        epsilon: float,
+        gamma: float,
+        checkpoint_frequency: int,
+        resume_from_checkpoint: Union[bool, str],
     ):
+        """Initialise the ValueIterationRunner"""
         self.max_batch_size = max_batch_size
         self.epsilon = epsilon
         self.gamma = gamma
@@ -40,11 +40,104 @@ class ValueIterationRunner:
 
         self.resume_from_checkpoint = resume_from_checkpoint
         self.setup()
+
+    ### Essential methods to implement in subclass ###
+
+    # In addition to the eight methods below, self._tree_flatten
+    #  should also be updated to include any subclass properties
+
+    def generate_states(self) -> Tuple[chex.Array, Union[None, dict[str, int]]]:
+        """Return a tuple consisting of an array of all possible states and a dictionary
+        that maps descriptive names of the components of the state to indices that can be
+        used to extract them from an individual state.
+        The array of states should be of shape (N_states, state_size)
+        The dictionary is not used by methods in the base class and is therefore optional."""
+        raise NotImplementedError
+
+    def create_state_to_idx_mapping(self) -> chex.Array:
+        """Return an array that maps from a state (represented as a tuple) to its index
+        in the state array
+        The array should have the same number of dimensions at the state array and have
+        a total number of elements equal to N_states"""
+        raise NotImplementedError
+
+    def generate_actions(self) -> Tuple[chex.Array, list[str]]:
+        """Return a tuple consisting of an array of all possible actions and a
+        list of descriptive names for each action dimension (e.g. if the action consists
+        of order quantities for one product, the list should contain a single string,
+        and if it consists of order quantities for two products, the list should contain
+        two strings)
+        The array of actions should be of shape (N_actions, action_size)
+        The list of descriptive names should be of length action_size"""
+
+        raise NotImplementedError
+
+    def generate_possible_random_outcomes(
+        self,
+    ) -> Tuple[chex.Array, Union[None, dict[str, int]]]:
+        """Return a tuple consisting of an array of all possible random outcomes and a dictionary
+        that maps descriptive names of the components of a random outcome to indices that can be
+        used to extract them from an individual random outcome.
+        The random outcome contains all the information that, along with a state and action, makes
+        the transition to the next state and calculation of the reward deterministic.
+        The array of random outcomes should be of shape (N_random_outcome, random_outcome_size)
+        The dictionary is not used by methods in the base class and is therefore optional.
+        """
+        raise NotImplementedError
+
+    def deterministic_transition_function(
+        self,
+        state: chex.Array,
+        action: Union[int, chex.Array],
+        random_combination: chex.Array,
+    ) -> Tuple[chex.Array, float]:
+        """Return the next state and single-step reward for the provided state, action and random combination"""
+        raise NotImplementedError
+
+    def get_probabilities(
+        self,
+        state: chex.Array,
+        action: Union[int, chex.Array],
+        possible_random_outcomes: chex.Array,
+    ) -> chex.Array:
+        """Return an array of the probabilities of each possible random outcome for the provides state-action pair
+        Output array should be of shape (N_possible_random_outcomes,)"""
+        raise NotImplementedError
+
+    def calculate_initial_values(self) -> chex.Array:
+        """Calculate the initial values for each state.
+        Output array should be of shape (N_states,)"""
+        raise NotImplementedError
+
+    def check_converged(
+        self, iteration: int, min_iter: int, V: chex.Array, V_old: chex.Array
+    ) -> bool:
+        """Convergence check to determined whether to stop value iteration"""
+        raise NotImplementedError
+
+    ### End of essential methods to implement in subclass ###
+
+    ### Optional methods to implement in subclass ###
+
+    def _setup_before_states_actions_random_outcomes_created(self) -> None:
+        """Function that is run during setup before the arrays of states, actions
+        and random outcomes are created. Use this to perform any calculations or set
+        any properties that are required for those arrays to be created."""
         pass
 
-    def setup(self):
-        # Setup will run vmap/jit where required
-        # Manual updates tp any parameters will not be reflected in output unless
+    def _setup_after_states_actions_random_outcomes_created(self) -> None:
+        """Function that is run during setup after the arrays of states, actions
+        and random outcomes are created. Use this to perform any calculations or set
+        any properties that depend on those arrays having been created."""
+        pass
+
+    ### End of optional methods to implement in subclass ###
+
+    def setup(self) -> None:
+        """Run setup to create arrays of states, actions and random outcomes;
+        pmap, vmap and jit methods where required, and load checkpoint if provided"""
+
+        # Manual updates to any parameters will not be reflected in output unless
         # set-up is rerun
 
         log.info("Starting setup")
@@ -95,7 +188,7 @@ class ValueIterationRunner:
             self.max_batch_size, math.ceil(len(self.states) / self.n_devices)
         )
 
-        # Reshape states into devices x n_batches x batch_size x state_dim
+        # Reshape states into shape (N_devices x N_batches x max_batch_size x state_size)
         self.padded_batched_states, self.n_pad = self._pad_and_batch_states_for_pmap(
             self.states, self.batch_size, self.n_devices
         )
@@ -104,7 +197,6 @@ class ValueIterationRunner:
         self.actions, self.action_labels = self.generate_actions()
 
         # Generate the possible random outcomes
-        # The method get_probabilities() return the probability of each occurring from a provided state
         (
             self.possible_random_outcomes,
             self.pro_component_idx_dict,
@@ -148,6 +240,7 @@ class ValueIterationRunner:
             self.possible_random_outcomes
         )
 
+        # Log some basic information about the problem
         log.info("Setup complete")
         log.info(f"Output file directory: {Path.cwd()}")
         log.info(f"N states = {self.output_info['set_sizes']['N_states']}")
@@ -156,36 +249,9 @@ class ValueIterationRunner:
             f"N random outcomes = {self.output_info['set_sizes']['N_random_outcomes']}"
         )
 
-    def _setup_before_states_actions_random_outcomes_created(self):
-        # This method will be run during setup before states, actions
-        # and random_outcomes arrays are generated. It should be used
-        # to set any properites that are required for those arrays to
-        # be generated
-        pass
-
-    def _setup_after_states_actions_random_outcomes_created(self):
-        # This method will be run during setup after states, actions
-        # and random_outcomes arrays are generated. It should be used
-        # to set any properties that depend on those arrays already being
-        # available
-        pass
-
-    def generate_states(self):
-        # This should return two items
-        # 1) The states as a list of tuples
-        # 2) A dictionary that maps descriptive names of components of the state
-        #    to indices. Dictionary is not used by methods in base class
-        #    but can make indexing operations in subclass methods easier to read.
-        #    If dict is not needed for subclass methods, can return None instead.
-        pass
-
-    def create_state_to_idx_mapping(self):
-        # This should return a jnp.array with the same number of dimensions
-        # as the state. It should return the index of the state in the states
-        # array when the state (represented as a tuple) is used to index it
-        pass
-
-    def _pad_and_batch_states_for_pmap(self, states, batch_size, n_devices):
+    def _pad_and_batch_states_for_pmap(
+        self, states, batch_size, n_devices
+    ) -> Tuple[chex.Array, int]:
         n_pad = (n_devices * batch_size) - (len(states) % (n_devices * batch_size))
         padded_states = jnp.vstack(
             [states, jnp.zeros((n_pad, states.shape[1]), dtype=jnp.int32)]
@@ -195,55 +261,15 @@ class ValueIterationRunner:
         )
         return padded_batched_states, n_pad
 
-    def _pad_and_batch_states_no_pmap(self, states, batch_size):
-        n_pad = (batch_size) - (len(states) % (batch_size))
-        padded_states = jnp.vstack(
-            [states, jnp.zeros((n_pad, states.shape[1]), dtype=jnp.int32)]
-        )
-        padded_batched_states = padded_states.reshape(-1, batch_size, states.shape[1])
-        return padded_batched_states, n_pad
-
-    def _unpad(self, padded_array, n_pad):
+    def _unpad(self, padded_array, n_pad) -> chex.Array:
         return padded_array[:-n_pad]
 
-    def generate_actions(self):
-        # This should return two items
-        # 1) The actions as a jnp.array (dimensions n_actions x action_size)
-        # 2) Labels for each dimension of the action
-
-        pass
-
-    def generate_possible_random_outcomes(self):
-        # This should return two items
-        # 1) The possible random outcomes as a jnp.array
-        #    (dimensions n_possible_random_combination x random_combination_size)
-        #    Each random combination represents the information that needs to be
-        #    provided, along with the state and action, to make the transition
-        #    deterministic.
-        # 2) A dictionary that maps descriptive names of components of the random
-        #    outcomes to indices. Dictionary is not used by methods in base class
-        #    but can make indexing operations in subclass methods easier to read.
-        #    If dict is not needed for subclass methods, can return None instead.
-        pass
-
-    def deterministic_transition_function(self, state, action, random_combination):
-        # This should return two items
-        # 1) The next state as a jnp.array
-        # 2) The single-step reward, a single float
-
-        pass
-
-    def get_probabilities(self, state, action, possible_random_outcomes):
-        # This should return a jnp.array of the probabilities of each random outcome
-        # for a provided (state, action) pair
-        pass
-
-    def get_value_next_state(self, next_state, V_old):
+    def get_value_next_state(self, next_state, V_old) -> float:
         return V_old[self.state_to_idx_mapping[tuple(next_state)]]
 
     def calculate_updated_state_action_value(
         self, state, action, possible_random_outcomes, V_old
-    ):
+    ) -> float:
         (
             next_states,
             single_step_rewards,
@@ -261,7 +287,9 @@ class ValueIterationRunner:
         ).dot(probs)
         return new_state_action_value
 
-    def calculate_updated_value(self, state, actions, possible_random_outcomes, V_old):
+    def calculate_updated_value(
+        self, state, actions, possible_random_outcomes, V_old
+    ) -> float:
         return jnp.max(
             self.calculate_updated_state_action_value_vmap_actions(
                 state, actions, possible_random_outcomes, V_old
@@ -272,7 +300,9 @@ class ValueIterationRunner:
         V = self.calculate_updated_value_vmap_states(batch_of_states, *carry)
         return carry, V
 
-    def calculate_updated_value_scan_state_batches(self, carry, padded_batched_states):
+    def calculate_updated_value_scan_state_batches(
+        self, carry, padded_batched_states
+    ) -> chex.Array:
         carry, V_padded = jax.lax.scan(
             self.calculate_updated_value_state_batch_jit,
             carry,
@@ -280,25 +310,13 @@ class ValueIterationRunner:
         )
         return V_padded
 
-    def calculate_initial_values(self):
-        # This should return a jnp.array of the same length
-        # as the states array - one initial estimate of the
-        # value function for each state
-        pass
-
-    def check_converged(self, iteration, min_iter, V, V_old):
-        # This should return True is value iteration has converged
-        # and we have completed at least min_iter iterations, and
-        # False if not
-        pass
-
     def run_value_iteration(
         self,
-        max_iter=100,
-        min_iter=1,
-        save_final_values=True,
-        save_policy=True,
-    ):
+        max_iter: int = 100,
+        min_iter: int = 1,
+        save_final_values: bool = True,
+        save_policy: bool = True,
+    ) -> dict[str, Union[pd.DataFrame, dict]]:
 
         # If already run more than max_iter, raise an error
         if self.iteration > max_iter:
