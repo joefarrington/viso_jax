@@ -2,65 +2,31 @@ import jax.numpy as jnp
 import numpy as np
 from typing import Optional
 from functools import partial
+import chex
 import pandas as pd
 from viso_jax.utils.yaml import from_yaml
+from viso_jax.policies.heuristic_policy import HeuristicPolicy
 
 
-class sSPolicy:
-    def __init__(
-        self,
-        env_id: str,
-        env_kwargs: Optional[dict] = {},
-        env_params: Optional[dict] = {},
-        policy_params_filepath: Optional[str] = None,
-    ):
+class sSPolicy(HeuristicPolicy):
+    def _get_param_col_names(self, env_id: str, env_kwargs: dict) -> list[str]:
+        """Get the column names for the policy parameters - these are the different types
+        of parameters e.g. target stock level or reorder point"""
+        return ["s", "S"]
 
-        self.param_col_names = ["s", "S"]
-        self.param_row_names = None
-        if env_id == "DeMoorPerishable":
-            self.forward = de_moor_perishable_sS_policy
-        elif env_id == "HendrixPerishableOneProduct":
-            self.forward = hendrix_perishable_one_product_sS_policy
-        elif env_id == "HendrixPerishableSubstitutionTwoProduct":
-            self.forward = partial(
-                hendrix_perishable_substitution_two_product_sS_policy,
-                max_useful_life=env_kwargs["max_useful_life"],
-            )
-            self.param_row_names = ["a", "b"]
+    def _get_param_row_names(self, env_id: str, env_kwargs: dict) -> list[str]:
+        """Get the row names for the policy parameters - these are the names of the different levels of a
+        given paramter, e.g. for different days of the week or different products"""
+        if env_id == "HendrixPerishableSubstitutionTwoProduct":
+            return ["a", "b"]
         elif env_id == "MirjaliliPerishablePlatelet":
-            self.forward = mirjalili_perishable_platelet_sS_policy
-            self.param_row_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+            return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         else:
-            raise ValueError(f"No (s,S) policy defined for Environment ID {env_id}")
-        if self.param_row_names is not None:
-            self.param_names = np.array(
-                [
-                    [f"{p}_{r}" for p in self.param_col_names]
-                    for r in self.param_row_names
-                ]
-            )
-        else:
-            self.param_names = np.array([self.param_col_names])
-
-        self.params_shape = self.param_names.shape
-
-        if policy_params_filepath:
-            self.policy_params = self.load_policy_params(policy_params_filepath)
-
-    def load_policy_params(self, filepath):
-        params_dict = from_yaml(filepath)["policy_params"]
-        if self.param_row_names is None:
-            params_df = pd.DataFrame(params_dict, index=[0])
-        else:
-            params_df = pd.DataFrame(params_dict)
-        policy_params = jnp.array(params_df.values)
-        assert (
-            policy_params.shape == self.params_shape
-        ), f"Parameters in file do not match expected shape: found {policy_params.shape} and expected {self.params_shape}"
-        return policy_params
+            return []
 
 
 def base_sS_policy(s, S, total_stock, policy_params):
+    """Basic (s, S) policy for all environments"""
     # s should be less than S
     # Enforce that constraint here, order only made when constraint met
     constaint_met = jnp.all(policy_params[:, 0] < policy_params[:, 1])
@@ -70,7 +36,10 @@ def base_sS_policy(s, S, total_stock, policy_params):
 # Different environments have different observation spaces so we need
 # one of each if the policy depends on an calculated feature, e.g total stock
 # for (s,S)
-def de_moor_perishable_sS_policy(policy_params, obs, rng):
+def de_moor_perishable_sS_policy(
+    policy_params: chex.Array, obs: chex.Array, rng: chex.PRNGKey
+) -> chex.Array:
+    """(s,S) policy for DeMoorPerishable environment"""
     # policy_params = [[s,S]]
     s = policy_params[0][0]
     S = policy_params[1][1]
@@ -79,7 +48,10 @@ def de_moor_perishable_sS_policy(policy_params, obs, rng):
     return jnp.array(order)
 
 
-def hendrix_perishable_one_product_sS_policy(policy_params, obs, rng):
+def hendrix_perishable_one_product_sS_policy(
+    policy_params: chex.Array, obs: chex.Array, rng: chex.PRNGKey
+) -> chex.Array:
+    """(s,S) policy for HendrixPerishableOneProduct environment"""
     # policy_params = [[s,S]]
     s = policy_params[0][0]
     S = policy_params[1][1]
@@ -91,8 +63,9 @@ def hendrix_perishable_one_product_sS_policy(policy_params, obs, rng):
 # Calculating the total stock for each product depends on the max_useful_life
 # Use partial() in the policy_constructor to set it
 def hendrix_perishable_substitution_two_product_sS_policy(
-    policy_params, obs, rng, max_useful_life
-):
+    policy_params: chex.Array, obs: chex.Array, rng: chex.PRNGKey, max_useful_life: int
+) -> chex.Array:
+    """(s,S) policy for HendrixPerishableSubstitutionTwoProduct environment"""
     # policy_params = [[s_a, S_a], [s_b, S_b]]
     s_a = policy_params[0, 0]
     S_a = policy_params[0, 1]
@@ -107,7 +80,10 @@ def hendrix_perishable_substitution_two_product_sS_policy(
     return jnp.array([order_a, order_b])
 
 
-def mirjalili_perishable_platelet_sS_policy(policy_params, obs, rng):
+def mirjalili_perishable_platelet_sS_policy(
+    policy_params: chex.Array, obs: chex.Array, rng: chex.PRNGKey
+) -> chex.Array:
+    """(s,S) policy for MirjaliliPerishablePlatelet environment"""
     # policy_params = [[s_Mon, S_Mon], ..., [s_Sun, S_Sun]]
     weekday = obs[0]
     s = policy_params[weekday][0]
