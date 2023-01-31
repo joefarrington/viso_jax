@@ -27,7 +27,12 @@ class ValueIterationRunner:
         checkpoint_frequency: int,
         resume_from_checkpoint: Union[bool, str],
     ):
-        """Initialise the ValueIterationRunner"""
+        """Base class for running value iteration
+        max_batch_size: Maximum number of states to update in parallel using vmap, will depend on GPU memory
+        epsilon: Convergence criterion for value iteration
+        gamma: Discount factor
+        checkpoint_frequency: Frequency with which to save checkpoints, 0 for no checkpoints
+        resume_from_checkpoint: If False, start from scratch; if filename, resume from checkpoint"""
         self.max_batch_size = max_batch_size
         self.epsilon = epsilon
         self.gamma = gamma
@@ -39,7 +44,7 @@ class ValueIterationRunner:
             self.cp_path.mkdir(parents=True, exist_ok=True)
 
         self.resume_from_checkpoint = resume_from_checkpoint
-        self.setup()
+        self._setup()
 
     ### Essential methods to implement in subclass ###
 
@@ -133,7 +138,103 @@ class ValueIterationRunner:
 
     ### End of optional methods to implement in subclass ###
 
-    def setup(self) -> None:
+    def run_value_iteration(
+        self,
+        max_iter: int = 100,
+        min_iter: int = 1,
+        save_final_values: bool = True,
+        save_policy: bool = True,
+    ) -> dict[str, Union[pd.DataFrame, dict]]:
+        """Run value iteration for a given number of iterations, or until convergence. Optionally save checkpoints of the
+        value function after each iteration, and the final value function and policy at the end of the run.
+        max_iter: maximum number of iterations to run
+        min_iter: minimum number of iterations to run, even if convergence is reached before this
+        save_final_values: whether to save the final value function as a csv file
+        save_policy: whether to save the final policy as a csv file"""
+
+        # If already run more than max_iter, raise an error
+        if self.iteration > max_iter:
+            raise ValueError(
+                f"At least {max_iter} iterations have already been completed"
+            )
+
+        # If min_iter greater than max_iter, raise an error
+        if min_iter > max_iter:
+            raise ValueError(f"min_iter must be less than or equal to max_iter")
+
+        log.info(f"Starting value iteration at iteration {self.iteration}")
+
+        for i in range(self.iteration, max_iter + 1):
+            padded_batched_V = self.calculate_updated_value_scan_state_batches_pmap(
+                (self.actions, self.possible_random_outcomes, self.V_old),
+                self.padded_batched_states,
+            )
+
+            V = self._unpad(padded_batched_V.reshape(-1), self.n_pad)
+
+            # Check for convergence
+            if self.check_converged(i, min_iter, V, self.V_old):
+                self.V_old = V
+                break
+            else:
+
+                if self.checkpoint_frequency > 0 and (
+                    i % self.checkpoint_frequency == 0
+                ):
+                    values_df = pd.DataFrame(V, index=self.state_tuples, columns=["V"])
+                    values_df.to_csv(Path(self.cp_path / f"values_{i}.csv"))
+
+                self.V_old = V
+
+            self.iteration += 1
+
+        # Potentially save down final values and policy
+        if save_final_values:
+            log.info("Saving final values")
+            values_df = pd.DataFrame(V, index=self.state_tuples, columns=["V"])
+            values_df.to_csv(f"values_{i}.csv")
+            log.info("Final values saved")
+
+        if save_policy:
+            log.info("Extracting and saving policy")
+
+            best_order_actions_df = self.get_policy()
+
+            best_order_actions_df.to_csv("best_order_actions.csv")
+            log.info("Policy saved")
+
+            return {
+                "V": values_df,
+                "policy": best_order_actions_df,
+                "output_info": self.output_info,
+            }
+
+    def get_policy(self) -> pd.DataFrame:
+        """Return the best policy based on the currently stored values, self.V_old,
+        as a dataframe"""
+        # Find that a smaller batch size required for this part
+        policy_batch_size = self.batch_size // 2
+
+        # This is slightly round-about way of constructing the table
+        # but in practice seemed to help avoid GPU OOM error
+
+        (self.padded_batched_states, self.n_pad,) = self._pad_and_batch_states_for_pmap(
+            self.states, policy_batch_size, self.n_devices
+        )
+        best_action_idxs_padded = self._extract_policy_scan_state_batches_pmap(
+            (self.actions, self.possible_random_outcomes, self.V_old),
+            self.padded_batched_states,
+        )
+        best_action_idxs = self._unpad(best_action_idxs_padded.reshape(-1), self.n_pad)
+        best_order_actions = jnp.take(self.actions, best_action_idxs, axis=0)
+        best_order_actions_df = pd.DataFrame(
+            best_order_actions,
+            index=self.state_tuples,
+            columns=self.action_labels,
+        )
+        return best_order_actions_df
+
+    def _setup(self) -> None:
         """Run setup to create arrays of states, actions and random outcomes;
         pmap, vmap and jit methods where required, and load checkpoint if provided"""
 
@@ -145,33 +246,33 @@ class ValueIterationRunner:
         log.info(f"Devices: {jax.devices()}")
 
         # Vmap and/or JIT methods
-        self.deterministic_transition_function_vmap_random_outcomes = jax.vmap(
+        self._deterministic_transition_function_vmap_random_outcomes = jax.vmap(
             self.deterministic_transition_function, in_axes=[None, None, 0]
         )
-        self.get_value_next_state_vmap_next_states = jax.jit(
-            jax.vmap(self.get_value_next_state, in_axes=[0, None])
+        self._get_value_next_state_vmap_next_states = jax.jit(
+            jax.vmap(self._get_value_next_state, in_axes=[0, None])
         )
-        self.calculate_updated_state_action_value_vmap_actions = jax.vmap(
-            self.calculate_updated_state_action_value, in_axes=[None, 0, None, None]
+        self._calculate_updated_state_action_value_vmap_actions = jax.vmap(
+            self._calculate_updated_state_action_value, in_axes=[None, 0, None, None]
         )
 
-        self.calculate_updated_value_vmap_states = jax.vmap(
-            self.calculate_updated_value, in_axes=[0, None, None, None]
+        self._calculate_updated_value_vmap_states = jax.vmap(
+            self._calculate_updated_value, in_axes=[0, None, None, None]
         )
-        self.calculate_updated_value_state_batch_jit = jax.jit(
-            self.calculate_updated_value_state_batch
+        self._calculate_updated_value_state_batch_jit = jax.jit(
+            self._calculate_updated_value_state_batch
         )
         self.calculate_updated_value_scan_state_batches_pmap = jax.pmap(
-            self.calculate_updated_value_scan_state_batches,
+            self._calculate_updated_value_scan_state_batches,
             in_axes=((None, None, None), 0),
         )
 
-        self.extract_policy_vmap_states = jax.vmap(
-            self.extract_policy, in_axes=[0, None, None, None]
+        self._extract_policy_vmap_states = jax.vmap(
+            self._extract_policy_one_state, in_axes=[0, None, None, None]
         )
-        self.extract_policy_state_batch_jit = jax.jit(self.extract_policy_state_batch)
-        self.extract_policy_scan_state_batches_pmap = jax.pmap(
-            self.extract_policy_scan_state_batches, in_axes=((None, None, None), 0)
+        self._extract_policy_state_batch_jit = jax.jit(self._extract_policy_state_batch)
+        self._extract_policy_scan_state_batches_pmap = jax.pmap(
+            self._extract_policy_scan_state_batches, in_axes=((None, None, None), 0)
         )
 
         # Hook for custom setup in subclasses
@@ -250,8 +351,10 @@ class ValueIterationRunner:
         )
 
     def _pad_and_batch_states_for_pmap(
-        self, states, batch_size, n_devices
+        self, states: chex.Array, batch_size: int, n_devices: int
     ) -> Tuple[chex.Array, int]:
+        """Pad states and reshape to (N_devices x N_batches x max_batch_size x state_size) to support
+        pmap over devices, and using jax.lax.scan to loop over batches of states."""
         n_pad = (n_devices * batch_size) - (len(states) % (n_devices * batch_size))
         padded_states = jnp.vstack(
             [states, jnp.zeros((n_pad, states.shape[1]), dtype=jnp.int32)]
@@ -261,24 +364,31 @@ class ValueIterationRunner:
         )
         return padded_batched_states, n_pad
 
-    def _unpad(self, padded_array, n_pad) -> chex.Array:
+    def _unpad(self, padded_array: chex.Array, n_pad: int) -> chex.Array:
+        """Remove padding from array"""
         return padded_array[:-n_pad]
 
-    def get_value_next_state(self, next_state, V_old) -> float:
+    def _get_value_next_state(self, next_state: chex.Array, V_old: chex.Array) -> float:
+        """Lookup the value of the next state in the value function from the previous iteration."""
         return V_old[self.state_to_idx_mapping[tuple(next_state)]]
 
-    def calculate_updated_state_action_value(
-        self, state, action, possible_random_outcomes, V_old
+    def _calculate_updated_state_action_value(
+        self,
+        state: chex.Array,
+        action: Union[int, chex.Array],
+        possible_random_outcomes: chex.Array,
+        V_old: chex.Array,
     ) -> float:
+        """Update the state-action value for a given state, action pair"""
         (
             next_states,
             single_step_rewards,
-        ) = self.deterministic_transition_function_vmap_random_outcomes(
+        ) = self._deterministic_transition_function_vmap_random_outcomes(
             state,
             action,
             possible_random_outcomes,
         )
-        next_state_values = self.get_value_next_state_vmap_next_states(
+        next_state_values = self._get_value_next_state_vmap_next_states(
             next_states, V_old
         )
         probs = self.get_probabilities(state, action, possible_random_outcomes)
@@ -287,131 +397,73 @@ class ValueIterationRunner:
         ).dot(probs)
         return new_state_action_value
 
-    def calculate_updated_value(
-        self, state, actions, possible_random_outcomes, V_old
+    def _calculate_updated_value(
+        self,
+        state: chex.Array,
+        actions: Union[int, chex.Array],
+        possible_random_outcomes: chex.Array,
+        V_old: chex.Array,
     ) -> float:
+        """Update the value for a given state, by taking the max of the updated state-action
+        values over all actions"""
         return jnp.max(
-            self.calculate_updated_state_action_value_vmap_actions(
+            self._calculate_updated_state_action_value_vmap_actions(
                 state, actions, possible_random_outcomes, V_old
             )
         )
 
-    def calculate_updated_value_state_batch(self, carry, batch_of_states):
-        V = self.calculate_updated_value_vmap_states(batch_of_states, *carry)
+    def _calculate_updated_value_state_batch(
+        self, carry, batch_of_states: chex.Array
+    ) -> Tuple[Tuple[Union[int, chex.Array], chex.Array, chex.Array], chex.Array]:
+        """Calculate the updated value for a batch of states"""
+        V = self._calculate_updated_value_vmap_states(batch_of_states, *carry)
         return carry, V
 
-    def calculate_updated_value_scan_state_batches(
-        self, carry, padded_batched_states
+    def _calculate_updated_value_scan_state_batches(
+        self,
+        carry: Tuple[Union[int, chex.Array], chex.Array, chex.Array],
+        padded_batched_states: chex.Array,
     ) -> chex.Array:
+        """Calculate the updated value for multiple batches of states, using jax.lax.scan to loop over batches of states."""
         carry, V_padded = jax.lax.scan(
-            self.calculate_updated_value_state_batch_jit,
+            self._calculate_updated_value_state_batch_jit,
             carry,
             padded_batched_states,
         )
         return V_padded
 
-    def run_value_iteration(
+    def _extract_policy_one_state(
         self,
-        max_iter: int = 100,
-        min_iter: int = 1,
-        save_final_values: bool = True,
-        save_policy: bool = True,
-    ) -> dict[str, Union[pd.DataFrame, dict]]:
-
-        # If already run more than max_iter, raise an error
-        if self.iteration > max_iter:
-            raise ValueError(
-                f"At least {max_iter} iterations have already been completed"
-            )
-
-        # If min_iter greater than max_iter, raise an error
-        if min_iter > max_iter:
-            raise ValueError(f"min_iter must be less than or equal to max_iter")
-
-        log.info(f"Starting value iteration at iteration {self.iteration}")
-
-        for i in range(self.iteration, max_iter + 1):
-            padded_batched_V = self.calculate_updated_value_scan_state_batches_pmap(
-                (self.actions, self.possible_random_outcomes, self.V_old),
-                self.padded_batched_states,
-            )
-
-            V = self._unpad(padded_batched_V.reshape(-1), self.n_pad)
-
-            # Check for convergence
-            if self.check_converged(i, min_iter, V, self.V_old):
-                break
-            else:
-
-                if self.checkpoint_frequency > 0 and (
-                    i % self.checkpoint_frequency == 0
-                ):
-                    values_df = pd.DataFrame(V, index=self.state_tuples, columns=["V"])
-                    values_df.to_csv(Path(self.cp_path / f"values_{i}.csv"))
-
-                self.V_old = V
-
-            self.iteration += 1
-
-        # Potentially save down final values and policy
-        if save_final_values:
-            log.info("Saving final values")
-            values_df = pd.DataFrame(V, index=self.state_tuples, columns=["V"])
-            values_df.to_csv(f"values_{i}.csv")
-            log.info("Final values saved")
-
-        # This is slightly round-about way of constructing the table
-        # but in practice seemed to help avoid GPU OOM error
-        if save_policy:
-            log.info("Extracting and saving policy")
-
-            # Find that a smaller batch size required for this part
-            policy_batch_size = self.batch_size // 2
-
-            (
-                self.padded_batched_states,
-                self.n_pad,
-            ) = self._pad_and_batch_states_for_pmap(
-                self.states, policy_batch_size, self.n_devices
-            )
-            best_action_idxs_padded = self.extract_policy_scan_state_batches_pmap(
-                (self.actions, self.possible_random_outcomes, V),
-                self.padded_batched_states,
-            )
-            best_action_idxs = self._unpad(
-                best_action_idxs_padded.reshape(-1), self.n_pad
-            )
-            best_order_actions = jnp.take(self.actions, best_action_idxs, axis=0)
-            best_order_actions_df = pd.DataFrame(
-                best_order_actions,
-                index=self.state_tuples,
-                columns=self.action_labels,
-            )
-
-            best_order_actions_df.to_csv("best_order_actions.csv")
-            log.info("Policy saved")
-
-            return {
-                "V": values_df,
-                "policy": best_order_actions_df,
-                "output_info": self.output_info,
-            }
-
-    def extract_policy(self, state, actions, possible_random_outcomes, V):
+        state: chex.Array,
+        actions: Union[int, chex.Array],
+        possible_random_outcomes: chex.Array,
+        V: chex.Array,
+    ) -> int:
+        """Extract the best action for a single state, by taking the argmax of the updated state-action values over all actions"""
         best_action_idx = jnp.argmax(
-            self.calculate_updated_state_action_value_vmap_actions(
+            self._calculate_updated_state_action_value_vmap_actions(
                 state, actions, possible_random_outcomes, V
             )
         )
         return best_action_idx
 
-    def extract_policy_state_batch(self, carry, batch_of_states):
-        best_action_idxs = self.extract_policy_vmap_states(batch_of_states, *carry)
+    def _extract_policy_state_batch(
+        self,
+        carry: Tuple[Union[int, chex.Array], chex.Array, chex.Array],
+        batch_of_states: chex.Array,
+    ) -> chex.Array:
+        """Extract the best action for a batch of states"""
+        best_action_idxs = self._extract_policy_vmap_states(batch_of_states, *carry)
         return carry, best_action_idxs
 
-    def extract_policy_scan_state_batches(self, carry, padded_batched_states):
+    def _extract_policy_scan_state_batches(
+        self,
+        carry: Tuple[Union[int, chex.Array], chex.Array, chex.Array],
+        padded_batched_states: chex.Array,
+    ) -> chex.Array:
+        """Extract the best action for multiple batches of states, using jax.lax.scan to loop over batches of states."""
         carry, best_action_idxs_padded = jax.lax.scan(
-            self.extract_policy_state_batch_jit,
+            self._extract_policy_state_batch_jit,
             carry,
             padded_batched_states,
         )
