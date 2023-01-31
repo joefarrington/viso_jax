@@ -4,11 +4,11 @@ from viso_jax.environments import (
     HendrixPerishableSubstitutionTwoProductGymnax,
     MirjaliliPerishablePlateletGymnax,
 )
+from typing import Callable
 
-# Each environment has a KPI functionuse this function to return it
 
-
-def get_kpi_function(env_id, **env_kwargs):
+def get_kpi_function(env_id: str, **env_kwargs) -> Callable:
+    """Return the KPI function for the given environment ID."""
     if env_id == "DeMoorPerishable":
         env = DeMoorPerishableGymnax(env_kwargs)
     elif env_id == "HendrixPerishableOneProduct":
