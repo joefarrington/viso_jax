@@ -44,8 +44,6 @@ class HeuristicPolicy:
 
         if policy_params_filepath:
             self.policy_params = self.load_policy_params(policy_params_filepath)
-        print(self.param_names)
-        print(self.param_names.shape)
 
     def _get_param_col_names(
         self, env_id: str, env: Environment, env_params: dict
