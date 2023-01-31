@@ -6,14 +6,15 @@ from viso_jax.evaluation.evaluate_policy import create_evaluation_output_summary
 from viso_jax.utils.yaml import to_yaml, from_yaml
 import jax
 import pandas as pd
+from omegaconf.dictconfig import DictConfig
 
 # Enable logging
 log = logging.getLogger(__name__)
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
-def main(cfg):
-
+def main(cfg: DictConfig) -> None:
+    """Run value iteration and optionally evaluate the resulting policy in simulation."""
     start_time = datetime.now()
 
     if cfg.jax_settings.double_precision:
