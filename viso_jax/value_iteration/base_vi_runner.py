@@ -12,10 +12,11 @@ import chex
 # Enable logging
 log = logging.getLogger("ValueIterationRunner")
 
-# TODO: This won't work properly if people change properties after initialization
-# because the construction of the state and actions spaces etc depend on those values
-# Could restrict to read-only access using properties, or use custom setter to force
-# re-running setup if one is changed.
+# NOTE: This won't work properly if properties are changed after setup is run
+# because the construction of the state and actions spaces etc depend on those values.
+# This is currently reflected in a logged warning at the completion of setup, but in
+# a future version could be handled using getter/setter methods for properties etc to
+# prevent a user from making changes.
 
 
 class ValueIterationRunner:
@@ -356,6 +357,9 @@ class ValueIterationRunner:
 
         # Log some basic information about the problem
         log.info("Setup complete")
+        log.warning(
+            "Changes to properties of the class after setup will not necessarily be reflected in the output and may lead to errors. To run an experiment with different settings, create a new value iteration runner"
+        )
         log.info(f"Output file directory: {Path.cwd()}")
         log.info(f"N states = {self.output_info['set_sizes']['N_states']}")
         log.info(f"N actions = {self.output_info['set_sizes']['N_actions']}")
