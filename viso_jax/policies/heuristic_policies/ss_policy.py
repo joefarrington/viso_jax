@@ -6,15 +6,20 @@ import chex
 import pandas as pd
 from viso_jax.utils.yaml import from_yaml
 from viso_jax.policies.heuristic_policy import HeuristicPolicy
+from gymnax.environments.environment import Environment, EnvParams
 
 
 class sSPolicy(HeuristicPolicy):
-    def _get_param_col_names(self, env_id: str, env_kwargs: dict) -> list[str]:
+    def _get_param_col_names(
+        self, env_id: str, env: Environment, env_params: EnvParams
+    ) -> list[str]:
         """Get the column names for the policy parameters - these are the different types
         of parameters e.g. target stock level or reorder point"""
         return ["s", "S"]
 
-    def _get_param_row_names(self, env_id: str, env_kwargs: dict) -> list[str]:
+    def _get_param_row_names(
+        self, env_id: str, env: Environment, env_params: EnvParams
+    ) -> list[str]:
         """Get the row names for the policy parameters - these are the names of the different levels of a
         given paramter, e.g. for different days of the week or different products"""
         if env_id == "HendrixPerishableSubstitutionTwoProduct":
@@ -24,8 +29,27 @@ class sSPolicy(HeuristicPolicy):
         else:
             return []
 
+    def _get_forward_method(
+        self, env_id: str, env: Environment, env_params: EnvParams
+    ) -> callable:
+        if env_id == "DeMoorPerishable":
+            return de_moor_perishable_sS_policy
+        elif env_id == "HendrixPerishableOneProduct":
+            self.forward = hendrix_perishable_one_product_sS_policy
+        elif env_id == "HendrixPerishableSubstitutionTwoProduct":
+            self.forward = partial(
+                hendrix_perishable_substitution_two_product_sS_policy,
+                max_useful_life=env.max_useful_life,
+            )
+        elif env_id == "MirjaliliPerishablePlatelet":
+            self.forward = mirjalili_perishable_platelet_sS_policy
+        else:
+            raise ValueError(f"No (s,S) policy defined for Environment ID {env_id}")
 
-def base_sS_policy(s, S, total_stock, policy_params):
+
+def base_sS_policy(
+    s: int, S: int, total_stock: int, policy_params: chex.Array
+) -> chex.Array:
     """Basic (s, S) policy for all environments"""
     # s should be less than S
     # Enforce that constraint here, order only made when constraint met

@@ -3,7 +3,9 @@ import numpy as np
 from typing import Optional
 import chex
 import pandas as pd
+import viso_jax
 from viso_jax.utils.yaml import from_yaml
+from gymnax.environments.environment import Environment
 
 
 class HeuristicPolicy:
@@ -15,9 +17,18 @@ class HeuristicPolicy:
         policy_params_filepath: Optional[str] = None,
     ):
 
-        self.param_col_names = self._get_param_col_names(env_id, env_kwargs)
-        self.param_row_names = self._get_param_row_names(env_id, env_kwargs)
-        self.forward = self._get_forward_method(env_id, env_kwargs)
+        # As in utils/rollout.py env_kwargs and env_params arguments are dicts to
+        # override the defaults for an environment.
+
+        # Instantiate an internal envinronment we'll use to access env kwargs/params
+        # These are not stored, just used to set up param_col_names, param_row_names and forward
+        self.env_id = env_id
+        env, default_env_params = viso_jax.make(self.env_id, **env_kwargs)
+        all_env_params = default_env_params.create_env_params(**env_params)
+
+        self.param_col_names = self._get_param_col_names(env_id, env, all_env_params)
+        self.param_row_names = self._get_param_row_names(env_id, env, all_env_params)
+        self.forward = self._get_forward_method(env_id, env, all_env_params)
 
         if self.param_row_names != []:
             self.param_names = np.array(
@@ -36,17 +47,23 @@ class HeuristicPolicy:
         print(self.param_names)
         print(self.param_names.shape)
 
-    def _get_param_col_names(self, env_id: str, env_kwargs: dict) -> list[str]:
+    def _get_param_col_names(
+        self, env_id: str, env: Environment, env_params: dict
+    ) -> list[str]:
         """Get the column names for the policy parameters - these are the different types
         of parameters e.g. target stock level or reorder point"""
         raise NotImplementedError
 
-    def _get_param_row_names(self, env_id: str, env_kwargs: dict) -> list[str]:
+    def _get_param_row_names(
+        self, env_id: str, env: Environment, env_params: dict
+    ) -> list[str]:
         """Get the row names for the policy parameters - these are the names of the different levels of a
         given paramter, e.g. for different days of the week or different products"""
         raise NotImplementedError
 
-    def _get_forward_method(self, env_id: str, env_kwargs: dict) -> callable:
+    def _get_forward_method(
+        self, env_id: str, env: Environment, env_params: dict
+    ) -> callable:
         """Get the forward method for the policy - this is the function that returns the action"""
         raise NotImplementedError
 

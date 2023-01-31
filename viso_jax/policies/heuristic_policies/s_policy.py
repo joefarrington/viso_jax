@@ -3,15 +3,20 @@ from functools import partial
 import chex
 from viso_jax.utils.yaml import from_yaml
 from viso_jax.policies.heuristic_policy import HeuristicPolicy
+from gymnax.environments.environment import Environment, EnvParams
 
 
 class SPolicy(HeuristicPolicy):
-    def _get_param_col_names(self, env_id: str, env_kwargs: dict) -> list[str]:
+    def _get_param_col_names(
+        self, env_id: str, env: Environment, env_params: EnvParams
+    ) -> list[str]:
         """Get the column names for the policy parameters - these are the different types
         of parameters e.g. target stock level or reorder point"""
         return ["S"]
 
-    def _get_param_row_names(self, env_id: str, env_kwargs: dict) -> list[str]:
+    def _get_param_row_names(
+        self, env_id: str, env: Environment, env_params: EnvParams
+    ) -> list[str]:
         """Get the row names for the policy parameters - these are the names of the different levels of a
         given paramter, e.g. for different days of the week or different products"""
         if env_id == "HendrixPerishableSubstitutionTwoProduct":
@@ -21,7 +26,9 @@ class SPolicy(HeuristicPolicy):
         else:
             return []
 
-    def _get_forward_method(self, env_id: str, env_kwargs: dict) -> callable:
+    def _get_forward_method(
+        self, env_id: str, env: Environment, env_params: EnvParams
+    ) -> callable:
         """Get the forward method for the policy - this is the function that returns the action"""
         if env_id == "DeMoorPerishable":
             return de_moor_perishable_S_policy
@@ -30,7 +37,7 @@ class SPolicy(HeuristicPolicy):
         elif env_id == "HendrixPerishableSubstitutionTwoProduct":
             return partial(
                 hendrix_perishable_substitution_two_product_S_policy,
-                max_useful_life=env_kwargs["max_useful_life"],
+                max_useful_life=env.max_useful_life,
             )
         elif env_id == "MirjaliliPerishablePlatelet":
             return mirjalili_perishable_platelet_S_policy
@@ -47,7 +54,7 @@ def base_S_policy(S: int, total_stock: int, policy_params: chex.Array) -> chex.A
 
 # Different environments have different observation spaces so we need
 # one of each if the policy depends on an calculated feature, e.g total stock
-# for (s,S)
+# for (S)
 def de_moor_perishable_S_policy(
     policy_params: chex.Array, obs: chex.Array, rng: chex.PRNGKey
 ) -> chex.Array:
