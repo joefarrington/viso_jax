@@ -31,7 +31,7 @@ class DeMoorPerishableVIR(ValueIterationRunner):
         max_batch_size: int = 1000,
         epsilon: float = 1e-4,
         gamma: float = 1,
-        checkpoint_frequency=1,
+        checkpoint_frequency: int = 1,
         resume_from_checkpoint: Union[bool, str] = False,
     ):
         """Class to run value iteration for de_moor_perishable scenario
@@ -226,8 +226,7 @@ class DeMoorPerishableVIR(ValueIterationRunner):
         return self.demand_probabilities
 
     def calculate_initial_values(self) -> chex.Array:
-        """Returns an array of the initial values for each state.
-        Output array should be of shape (N_states,)"""
+        """Returns an array of the initial values for each state"""
         return jnp.zeros(len(self.states))
 
     def check_converged(
@@ -251,7 +250,7 @@ class DeMoorPerishableVIR(ValueIterationRunner):
             log.info(f"Iteration {iteration}, max delta: {max_delta}")
             return False
 
-    ### Supporting function for self.deterministic_transition_function ###
+    ### Supporting function for self.deterministic_transition_function() ###
     def _issue_fifo(self, opening_stock: chex.Array, demand: int) -> chex.Array:
         """Issue stock using FIFO policy"""
         # Oldest stock on RHS of vector, so reverse
@@ -287,7 +286,7 @@ class DeMoorPerishableVIR(ValueIterationRunner):
         reward = -1 * cost
         return reward
 
-    ### Supporting functions for get_probabilities ###
+    ### Supporting functions for self.get_probabilities() ###
     def _convert_gamma_parameters(self, mean: float, cov: float) -> Tuple[float, float]:
         """Convert mean and coefficient of variation to gamma distribution parameters required
         by numpyro.distributions.Gamma"""
@@ -311,6 +310,9 @@ class DeMoorPerishableVIR(ValueIterationRunner):
             1 - demand_probabilities.sum()
         )
         return demand_probabilities
+
+    ### Utility functions to set up pytree for class ###
+    # See https://jax.readthedocs.io/en/latest/faq.html#strategy-3-making-customclass-a-pytree
 
     def _tree_flatten(self):
         children = (
