@@ -70,11 +70,11 @@ class DeMoorPerishableGymnax(environment.Environment):
         max_order_quantity: int = 10,
         issue_policy: str = "lifo",
     ):
+        super().__init__()
         self.max_useful_life = max_useful_life
         self.lead_time = lead_time
         self.max_order_quantity = max_order_quantity
         self.issue_policy = issue_policy
-        super().__init__()
 
     @property
     def default_params(self) -> EnvParams:
