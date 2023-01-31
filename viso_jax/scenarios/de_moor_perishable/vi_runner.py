@@ -7,6 +7,8 @@ import numpyro
 from viso_jax.value_iteration.base_vi_runner import ValueIterationRunner
 from pathlib import Path
 from jax import tree_util
+from typing import Union, Tuple
+import chex
 
 # Enable logging
 log = logging.getLogger("ValueIterationRunner")
@@ -15,23 +17,40 @@ log = logging.getLogger("ValueIterationRunner")
 class DeMoorPerishableVIR(ValueIterationRunner):
     def __init__(
         self,
-        max_demand,
-        demand_gamma_mean,
-        demand_gamma_cov,
-        max_useful_life,
-        lead_time,
-        max_order_quantity,
-        variable_order_cost,
-        shortage_cost,
-        wastage_cost,
-        holding_cost,
-        issue_policy="fifo",
-        max_batch_size=1000,
-        epsilon=1e-4,
-        gamma=1,
-        checkpoint_frequency=1,  # Zero for no checkpoints, otherwise every x iterations
-        resume_from_checkpoint=False,  # Set to checkpoint file path to restore
+        max_demand: int,
+        demand_gamma_mean: float,
+        demand_gamma_cov: float,
+        max_useful_life: int,
+        lead_time: int,
+        max_order_quantity: int,
+        variable_order_cost: float,
+        shortage_cost: float,
+        wastage_cost: float,
+        holding_cost: float,
+        issue_policy: str = "fifo",
+        max_batch_size: int = 1000,
+        epsilon: float = 1e-4,
+        gamma: float = 1,
+        checkpoint_frequency=1,
+        resume_from_checkpoint: Union[bool, str] = False,
     ):
+        """Class to run value iteration for DeMoorPerishable scenario
+        max_demand: maximum daily demand
+        demand_gamma_mean: mean of gamma distribution that models demand
+        demand_gamma_cov: coefficient of variation of gamma distribution that models demand
+        max_useful_life: maximum useful life of product, m >= 1
+        lead_time: lead time of product, L >= 1
+        max_order_quantity: maximum order quantity
+        variable_order_cost: cost per unit ordered
+        shortage_cost: cost per unit of demand not met
+        wastage_cost: cost per unit of product that expires before use
+        holding_cost: cost per unit of product in stock at the end of the day
+        issue_policy: should be either 'fifo' or 'lifo'
+        max_batch_size: Maximum number of states to update in parallel using vmap, will depend on GPU memory
+        epsilon: Convergence criterion for value iteration
+        gamma: Discount factor
+        checkpoint_frequency: Frequency with which to save checkpoints, 0 for no checkpoints
+        resume_from_checkpoint: If False, start from scratch; if filename, resume from checkpoint"""
 
         self.max_demand = max_demand
 
@@ -44,11 +63,14 @@ class DeMoorPerishableVIR(ValueIterationRunner):
             self.demand_gamma_alpha, self.demand_gamma_beta
         )
 
+        assert (
+            max_useful_life >= 1
+        ), "max_useful_life must be greater than or equal to 1"
         self.max_useful_life = max_useful_life
 
-        assert lead_time >= 1, "Lead time must be greater than or equal to 1"
-
+        assert lead_time >= 1, "lead_time must be greater than or equal to 1"
         self.lead_time = lead_time
+
         self.max_order_quantity = max_order_quantity
         self.cost_components = jnp.array(
             [
@@ -76,9 +98,12 @@ class DeMoorPerishableVIR(ValueIterationRunner):
 
         self.resume_from_checkpoint = resume_from_checkpoint
 
-        self.setup()
+        self._setup()
 
-    def generate_states(self):
+    def generate_states(self) -> Tuple[chex.Array, dict[str, int]]:
+        """Returns a tuple consisting of an array of all possible states and a dictionary
+        that maps descriptive names of the components of the state to indices that can be
+        used to extract them from an individual state"""
 
         possible_orders = range(0, self.max_order_quantity + 1)
         product_arg = [possible_orders] * (self.max_useful_life + self.lead_time - 1)
@@ -104,7 +129,9 @@ class DeMoorPerishableVIR(ValueIterationRunner):
 
         return state_tuples, state_component_idx_dict
 
-    def create_state_to_idx_mapping(self):
+    def create_state_to_idx_mapping(self) -> chex.Array:
+        """Returns an array that maps from a state (represented as a tuple) to its index
+        in the state array"""
         state_to_idx = np.zeros(
             (
                 *[self.max_order_quantity + 1]
@@ -116,19 +143,30 @@ class DeMoorPerishableVIR(ValueIterationRunner):
         state_to_idx = jnp.array(state_to_idx, dtype=jnp.int32)
         return state_to_idx
 
-    def generate_actions(self):
+    def generate_actions(self) -> Tuple[chex.Array, list[str]]:
+        """Returns a tuple consisting of an array of all possible actions and a
+        list of descriptive names for each action dimension"""
         actions = jnp.arange(0, self.max_order_quantity + 1)
         action_labels = ["order_quantity"]
         return actions, action_labels
 
-    def generate_possible_random_outcomes(self):
+    def generate_possible_random_outcomes(self) -> Tuple[chex.Array, dict[str, int]]:
+        """Returns a tuple consisting of an array of all possible random outcomes and a dictionary
+        that maps descriptive names of the components of a random outcome to indices that can be
+        used to extract them from an individual random outcome."""
         possible_random_outcomes = jnp.arange(0, self.max_demand + 1).reshape(-1, 1)
         pro_component_idx_dict = {}
         pro_component_idx_dict["demand"] = 0
 
         return possible_random_outcomes, pro_component_idx_dict
 
-    def deterministic_transition_function(self, state, action, random_outcome):
+    def deterministic_transition_function(
+        self,
+        state: chex.Array,
+        action: Union[int, chex.Array],
+        random_outcome: chex.Array,
+    ) -> Tuple[chex.Array, float]:
+        """Returns the next state and single-step reward for the provided state, action and random combination"""
         demand = random_outcome[self.pro_component_idx_dict["demand"]]
 
         opening_in_transit = state[
@@ -172,18 +210,29 @@ class DeMoorPerishableVIR(ValueIterationRunner):
 
         return next_state, single_step_reward
 
-    def get_probabilities(self, state, action=None, possible_random_combinations=None):
+    def get_probabilities(
+        self,
+        state: chex.Array,
+        action: Union[int, chex.Array],
+        possible_random_outcomes: chex.Array,
+    ) -> chex.Array:
+        """Returns an array of the probabilities of each possible random outcome for the provides state-action pair"""
         # Same probabilities for every (state, action) pair
         # so calculate once during setup
         return self.demand_probabilities
 
-    def calculate_initial_values(self):
+    def calculate_initial_values(self) -> chex.Array:
+        """Returns an array of the initial values for each state.
+        Output array should be of shape (N_states,)"""
         return jnp.zeros(len(self.states))
 
-    def check_converged(self, iteration, min_iter, V, V_old):
-        # Here we use a discount factor, so
-        # We want biggest change to a value to be less than epsilon
-        # This is a difference conv check to the others
+    def check_converged(
+        self, iteration: int, min_iter: int, V: chex.Array, V_old: chex.Array
+    ) -> bool:
+        """Convergence check to determine whether to stop value iteration. This convergence check
+        is testing for the convergence of the value function itself, and will stop value iteration
+        when the values for every state are approximately equal to the values from the previous iteration"""
+
         max_delta = jnp.max(jnp.abs(V - V_old))
         if max_delta < self.epsilon:
             if iteration >= min_iter:
@@ -198,39 +247,54 @@ class DeMoorPerishableVIR(ValueIterationRunner):
             log.info(f"Iteration {iteration}, max delta: {max_delta}")
             return False
 
-    ##### Supporting function for deterministic transition function ####
-    def _issue_fifo(self, opening_stock, demand):
+    ### Supporting function for self.deterministic_transition_function ###
+    def _issue_fifo(self, opening_stock: chex.Array, demand: int) -> chex.Array:
+        """Issue stock using FIFO policy"""
         # Oldest stock on RHS of vector, so reverse
         _, remaining_stock = jax.lax.scan(
             self._issue_one_step, demand, opening_stock, reverse=True
         )
         return remaining_stock
 
-    def _issue_lifo(self, opening_stock, demand):
+    def _issue_lifo(self, opening_stock: chex.Array, demand: int) -> chex.Array:
+        """Issue stock using LIFO policy"""
         # Freshest stock on LHS of vector
         _, remaining_stock = jax.lax.scan(self._issue_one_step, demand, opening_stock)
         return remaining_stock
 
-    def _issue_one_step(self, remaining_demand, stock_element):
+    def _issue_one_step(
+        self, remaining_demand: int, stock_element: int
+    ) -> Tuple[int, int]:
+        """Fill demand with stock of one age, representing one element in the state"""
         remaining_stock = (stock_element - remaining_demand).clip(0)
         remaining_demand = (remaining_demand - stock_element).clip(0)
         return remaining_demand, remaining_stock
 
     def _calculate_single_step_reward(
-        self, state, action, transition_function_reward_output
-    ):
-        # Minus one to reflect the fact that they are costs
+        self,
+        state: chex.Array,
+        action: Union[int, chex.Array],
+        transition_function_reward_output: chex.Array,
+    ) -> float:
+        """Calculate the single step reward based on the provided state, action and
+        output from the transition function"""
         cost = jnp.dot(transition_function_reward_output, self.cost_components)
+        # Multiply by -1 to reflect the fact that they are costs
         reward = -1 * cost
         return reward
 
-    ##### Supporting functions for calculating demand probabilities
-    def _convert_gamma_parameters(self, mean, cov):
+    ### Supporting functions for get_probabilities ###
+    def _convert_gamma_parameters(self, mean: float, cov: float) -> Tuple[float, float]:
+        """Convert mean and coefficient of variation to gamma distribution parameters required
+        by numpyro.distributions.Gamma"""
         alpha = 1 / (cov**2)
         beta = 1 / (mean * cov**2)
         return alpha, beta
 
-    def _calculate_demand_probabilities(self, gamma_alpha, gamma_beta):
+    def _calculate_demand_probabilities(
+        self, gamma_alpha: float, gamma_beta: float
+    ) -> chex.Array:
+        """Calculate the probability of each demand level (0, max_demand), given the gamma distribution parameters"""
         cdf = numpyro.distributions.Gamma(gamma_alpha, gamma_beta).cdf(
             jnp.hstack([0, jnp.arange(0.5, self.max_demand + 1.5)])
         )
