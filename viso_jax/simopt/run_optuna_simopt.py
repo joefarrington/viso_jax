@@ -1,22 +1,26 @@
 import hydra
 from omegaconf import OmegaConf
+from omegaconf.dictconfig import DictConfig
 import logging
 from datetime import datetime
 import pandas as pd
 import optuna
+from optuna.study import Study
 import jax
 import jax.numpy as jnp
 import numpy as np
 import gymnax
+import chex
 from viso_jax.evaluation.evaluate_policy import create_evaluation_output_summary
 from viso_jax.utils.yaml import to_yaml, from_yaml
+from viso_jax.utils.rollout import RolloutWrapper
 
 # Enable logging
 log = logging.getLogger(__name__)
 
 
-def param_search_bounds_from_config(cfg, policy):
-    """Create a search bound dict from the config file"""
+def param_search_bounds_from_config(cfg: DictConfig, policy) -> dict[str, int]:
+    """Create a dict of search bounds for each parameter from the config file"""
     # Specify search bounds for each parameter
     if cfg.param_search.search_bounds.all_params is None:
         try:
@@ -43,7 +47,9 @@ def param_search_bounds_from_config(cfg, policy):
     return search_bounds
 
 
-def grid_search_space_from_config(search_bounds, policy):
+def grid_search_space_from_config(
+    search_bounds: dict[str, int], policy
+) -> dict[str, list[int]]:
     """Create a grid search space from the search bounds"""
     search_space = {
         p: list(
@@ -61,7 +67,10 @@ def grid_search_space_from_config(search_bounds, policy):
 # interface so we need to treat it a bit differently to avoid
 # to avoid duplication and handle RuntimeError
 # https://github.com/optuna/optuna/issues/4121
-def simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval):
+def simopt_grid_sampler(
+    cfg: DictConfig, policy, rollout_wrapper: RolloutWrapper, rng_eval: chex.PRNGKey
+) -> Study:
+    """Run simulation optimization using Optuna's GridSampler to propose parameter values"""
     search_bounds = param_search_bounds_from_config(cfg, policy)
     search_space = grid_search_space_from_config(search_bounds, policy)
     sampler = hydra.utils.instantiate(
@@ -128,7 +137,10 @@ def simopt_grid_sampler(cfg, policy, rollout_wrapper, rng_eval):
     return study
 
 
-def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
+def simopt_other_sampler(
+    cfg: DictConfig, policy, rollout_wrapper: RolloutWrapper, rng_eval: chex.PRNGKey
+) -> Study:
+    """Run simulation optimization using an Optuna sampler other than GridSampler to propose parameter values"""
     search_bounds = param_search_bounds_from_config(cfg, policy)
     sampler = hydra.utils.instantiate(
         cfg.param_search.sampler, seed=cfg.param_search.seed
@@ -199,8 +211,9 @@ def simopt_other_sampler(cfg, policy, rollout_wrapper, rng_eval):
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
-def main(cfg):
-
+def main(cfg: DictConfig) -> None:
+    """Run simulation optimization using Optuna to find the best parameters for a policy,
+    and evaluate the policy using the best parameters on a separate set of rollouts"""
     start_time = datetime.now()
 
     output_info = {}
