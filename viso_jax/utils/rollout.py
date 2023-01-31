@@ -7,13 +7,14 @@ import jax.numpy as jnp
 import viso_jax
 import gymnax
 from functools import partial
-from typing import Optional
+from typing import Optional, Callable
+import chex
 
 
 class RolloutWrapper(object):
     def __init__(
         self,
-        model_forward=None,
+        model_forward: Callable = None,
         env_id: str = "DeMoorPerishable",
         num_env_steps: Optional[int] = None,
         env_kwargs: dict = {},
@@ -21,7 +22,7 @@ class RolloutWrapper(object):
         num_burnin_steps: int = 0,
         return_info: bool = False,
     ):
-        """Wrapper to define batch evaluation for generation parameters."""
+        """Wrapper to define batch evaluation for policy parameters."""
         self.env_id = env_id
         # Define the RL environment & network forward function
         self.env, default_env_params = viso_jax.make(self.env_id, **env_kwargs)
@@ -46,22 +47,28 @@ class RolloutWrapper(object):
         self.return_info = return_info
 
     @partial(jax.jit, static_argnums=(0,))
-    def population_rollout(self, rng_eval, policy_params):
+    def population_rollout(
+        self, rng_eval: chex.PRNGKey, policy_params: chex.Array
+    ) -> dict[str, chex.Array]:
         """Reshape parameter vector and evaluate the generation."""
         # Evaluate population of nets on gymnax task - vmap over rng & params
         pop_rollout = jax.vmap(self.batch_rollout, in_axes=(None, 0))
         return pop_rollout(rng_eval, policy_params)
 
     @partial(jax.jit, static_argnums=(0,))
-    def batch_rollout(self, rng_eval, policy_params):
+    def batch_rollout(
+        self, rng_eval: chex.PRNGKey, policy_params: chex.Array
+    ) -> dict[str, chex.Array]:
         """Evaluate a generation of networks on RL/Supervised/etc. task."""
         # vmap over different MC fitness evaluations for single network
         batch_rollout = jax.vmap(self.single_rollout, in_axes=(0, None))
         return batch_rollout(rng_eval, policy_params)
 
     @partial(jax.jit, static_argnums=(0,))
-    def single_rollout(self, rng_input, policy_params):
-        """Rollout a pendulum episode with lax.scan."""
+    def single_rollout(
+        self, rng_input: chex.PRNGKey, policy_params: chex.Array
+    ) -> dict[str, chex.Array]:
+        """Rollout an episode with lax.scan."""
         # Reset the environment
         rng_reset, rng_episode = jax.random.split(rng_input)
         obs, state = self.env.reset(rng_reset, self.env_params)
@@ -167,7 +174,7 @@ class RolloutWrapper(object):
         return output
 
     @property
-    def input_shape(self):
+    def input_shape(self) -> tuple[int, ...]:
         """Get the shape of the observation."""
         rng = jax.random.PRNGKey(0)
         obs, state = self.env.reset(rng, self.env_params)
