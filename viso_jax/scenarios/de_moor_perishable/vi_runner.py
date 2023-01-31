@@ -34,23 +34,27 @@ class DeMoorPerishableVIR(ValueIterationRunner):
         checkpoint_frequency=1,
         resume_from_checkpoint: Union[bool, str] = False,
     ):
-        """Class to run value iteration for DeMoorPerishable scenario
-        max_demand: maximum daily demand
-        demand_gamma_mean: mean of gamma distribution that models demand
-        demand_gamma_cov: coefficient of variation of gamma distribution that models demand
-        max_useful_life: maximum useful life of product, m >= 1
-        lead_time: lead time of product, L >= 1
-        max_order_quantity: maximum order quantity
-        variable_order_cost: cost per unit ordered
-        shortage_cost: cost per unit of demand not met
-        wastage_cost: cost per unit of product that expires before use
-        holding_cost: cost per unit of product in stock at the end of the day
-        issue_policy: should be either 'fifo' or 'lifo'
-        max_batch_size: Maximum number of states to update in parallel using vmap, will depend on GPU memory
-        epsilon: Convergence criterion for value iteration
-        gamma: Discount factor
-        checkpoint_frequency: Frequency with which to save checkpoints, 0 for no checkpoints
-        resume_from_checkpoint: If False, start from scratch; if filename, resume from checkpoint"""
+        """Class to run value iteration for de_moor_perishable scenario
+
+        Args:
+            max_demand: maximum daily demand
+            demand_gamma_mean: mean of gamma distribution that models demand
+            demand_gamma_cov: coefficient of variation of gamma distribution that models demand
+            max_useful_life: maximum useful life of product, m >= 1
+            lead_time: lead time of product, L >= 1
+            max_order_quantity: maximum order quantity
+            variable_order_cost: cost per unit ordered
+            shortage_cost: cost per unit of demand not met
+            wastage_cost: cost per unit of product that expires before use
+            holding_cost: cost per unit of product in stock at the end of the day
+            issue_policy: should be either 'fifo' or 'lifo'
+            max_batch_size: Maximum number of states to update in parallel using vmap, will depend on GPU memory
+            epsilon: Convergence criterion for value iteration
+            gamma: Discount factor
+            checkpoint_frequency: Frequency with which to save checkpoints, 0 for no checkpoints
+            resume_from_checkpoint: If False, start from scratch; if filename, resume from checkpoint
+
+        """
 
         self.max_demand = max_demand
 
