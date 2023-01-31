@@ -14,12 +14,15 @@ import chex
 from viso_jax.evaluation.evaluate_policy import create_evaluation_output_summary
 from viso_jax.utils.yaml import to_yaml, from_yaml
 from viso_jax.utils.rollout import RolloutWrapper
+from viso_jax.policies.heuristic_policy import HeuristicPolicy
 
 # Enable logging
 log = logging.getLogger(__name__)
 
 
-def param_search_bounds_from_config(cfg: DictConfig, policy) -> dict[str, int]:
+def param_search_bounds_from_config(
+    cfg: DictConfig, policy: HeuristicPolicy
+) -> dict[str, int]:
     """Create a dict of search bounds for each parameter from the config file"""
     # Specify search bounds for each parameter
     if cfg.param_search.search_bounds.all_params is None:
@@ -48,7 +51,7 @@ def param_search_bounds_from_config(cfg: DictConfig, policy) -> dict[str, int]:
 
 
 def grid_search_space_from_config(
-    search_bounds: dict[str, int], policy
+    search_bounds: dict[str, int], policy: HeuristicPolicy
 ) -> dict[str, list[int]]:
     """Create a grid search space from the search bounds"""
     search_space = {
@@ -68,7 +71,10 @@ def grid_search_space_from_config(
 # to avoid duplication and handle RuntimeError
 # https://github.com/optuna/optuna/issues/4121
 def simopt_grid_sampler(
-    cfg: DictConfig, policy, rollout_wrapper: RolloutWrapper, rng_eval: chex.PRNGKey
+    cfg: DictConfig,
+    policy: HeuristicPolicy,
+    rollout_wrapper: RolloutWrapper,
+    rng_eval: chex.PRNGKey,
 ) -> Study:
     """Run simulation optimization using Optuna's GridSampler to propose parameter values"""
     search_bounds = param_search_bounds_from_config(cfg, policy)
@@ -138,7 +144,10 @@ def simopt_grid_sampler(
 
 
 def simopt_other_sampler(
-    cfg: DictConfig, policy, rollout_wrapper: RolloutWrapper, rng_eval: chex.PRNGKey
+    cfg: DictConfig,
+    policy: HeuristicPolicy,
+    rollout_wrapper: RolloutWrapper,
+    rng_eval: chex.PRNGKey,
 ) -> Study:
     """Run simulation optimization using an Optuna sampler other than GridSampler to propose parameter values"""
     search_bounds = param_search_bounds_from_config(cfg, policy)
@@ -257,7 +266,7 @@ def main(cfg: DictConfig) -> None:
     )
     # If no row labels, we don't want a multi-level dict
     # so handle separately
-    if policy.param_row_names is None:
+    if policy.param_row_names == []:
         output_info["policy_params"] = {
             str(param_name): int(param_value)
             for param_name, param_value in zip(
