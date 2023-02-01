@@ -31,7 +31,7 @@ class DeMoorPerishableVIR(ValueIterationRunner):
         max_batch_size: int = 1000,
         epsilon: float = 1e-4,
         gamma: float = 1,
-        checkpoint_frequency: int = 1,
+        checkpoint_frequency: int = 0.99,
         resume_from_checkpoint: Union[bool, str] = False,
     ):
         """Class to run value iteration for de_moor_perishable scenario
@@ -104,10 +104,10 @@ class DeMoorPerishableVIR(ValueIterationRunner):
 
         self._setup()
 
-    def generate_states(self) -> tuple[chex.Array, dict[str, int]]:
-        """Returns a tuple consisting of an array of all possible states and a dictionary
-        that maps descriptive names of the components of the state to indices that can be
-        used to extract them from an individual state"""
+    def generate_states(self) -> tuple[list[tuple], dict[str, int]]:
+        """Returns a tuple consisting of a list of all possible states as tuples and a
+        dictionary that maps descriptive names of the components of the state to indices
+        that can be used to extract them from an individual state"""
 
         possible_orders = range(0, self.max_order_quantity + 1)
         product_arg = [possible_orders] * (self.max_useful_life + self.lead_time - 1)

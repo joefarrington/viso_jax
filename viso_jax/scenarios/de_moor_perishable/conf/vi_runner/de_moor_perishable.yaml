@@ -12,6 +12,6 @@ holding_cost: ${scenario_settings.holding_cost}
 issue_policy: ${scenario_settings.issue_policy}
 max_batch_size: 1000
 epsilon: 1e-4
-gamma: 0.99
+gamma: ${scenario_settings.gamma}
 checkpoint_frequency: 100  # Zero for no checkpoints
 resume_from_checkpoint: False
