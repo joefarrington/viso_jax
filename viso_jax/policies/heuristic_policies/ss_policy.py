@@ -35,14 +35,14 @@ class sSPolicy(HeuristicPolicy):
         if env_id == "DeMoorPerishable":
             return de_moor_perishable_sS_policy
         elif env_id == "HendrixPerishableOneProduct":
-            self.forward = hendrix_perishable_one_product_sS_policy
+            return hendrix_perishable_one_product_sS_policy
         elif env_id == "HendrixPerishableSubstitutionTwoProduct":
-            self.forward = partial(
+            return partial(
                 hendrix_perishable_substitution_two_product_sS_policy,
                 max_useful_life=env.max_useful_life,
             )
         elif env_id == "MirjaliliPerishablePlatelet":
-            self.forward = mirjalili_perishable_platelet_sS_policy
+            return mirjalili_perishable_platelet_sS_policy
         else:
             raise ValueError(f"No (s,S) policy defined for Environment ID {env_id}")
 
@@ -53,8 +53,8 @@ def base_sS_policy(
     """Basic (s, S) policy for all environments"""
     # s should be less than S
     # Enforce that constraint here, order only made when constraint met
-    constaint_met = jnp.all(policy_params[:, 0] < policy_params[:, 1])
-    return jnp.where((total_stock <= s) & (constaint_met), S - total_stock, 0)
+    constraint_met = jnp.all(policy_params[:, 0] < policy_params[:, 1])
+    return jnp.where((total_stock <= s) & (constraint_met), S - total_stock, 0)
 
 
 # Different environments have different observation spaces so we need
