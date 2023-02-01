@@ -186,7 +186,6 @@ class ValueIterationRunner:
 
             # Check for convergence
             if self.check_converged(i, min_iter, V, self.V_old):
-                self.V_old = V
                 break
             else:
 
@@ -213,7 +212,7 @@ class ValueIterationRunner:
         if save_policy:
             log.info("Extracting and saving policy")
 
-            best_order_actions_df = self.get_policy()
+            best_order_actions_df = self.get_policy(V)
 
             best_order_actions_df.to_csv("best_order_actions.csv")
             log.info("Policy saved")
@@ -223,8 +222,8 @@ class ValueIterationRunner:
 
         return to_return
 
-    def get_policy(self) -> pd.DataFrame:
-        """Return the best policy based on the currently stored values, self.V_old,
+    def get_policy(self, V) -> pd.DataFrame:
+        """Return the best policy, based on the input values V,
         as a dataframe"""
         # Find that a smaller batch size required for this part
         policy_batch_size = self.batch_size // 2
@@ -236,7 +235,7 @@ class ValueIterationRunner:
             self.states, policy_batch_size, self.n_devices
         )
         best_action_idxs_padded = self._extract_policy_scan_state_batches_pmap(
-            (self.actions, self.possible_random_outcomes, self.V_old),
+            (self.actions, self.possible_random_outcomes, V),
             self.padded_batched_states,
         )
         best_action_idxs = self._unpad(best_action_idxs_padded.reshape(-1), self.n_pad)
