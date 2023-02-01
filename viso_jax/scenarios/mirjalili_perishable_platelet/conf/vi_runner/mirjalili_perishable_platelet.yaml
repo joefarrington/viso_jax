@@ -1,4 +1,4 @@
-_target_: viso_jax.scenarios.mirjalili_perishable_platelet.vi_runner.MDet
+_target_: viso_jax.scenarios.mirjalili_perishable_platelet.vi_runner.MirjaliliPerishablePlateletVIR
 max_demand: ${scenario_settings.max_demand}
 weekday_demand_negbin_n: ${scenario_settings.weekday_demand_negbin_n}
 weekday_demand_negbin_delta: ${scenario_settings.weekday_demand_negbin_delta}

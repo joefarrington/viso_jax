@@ -130,7 +130,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
             6: "sunday",
         }
 
-        self.setup()
+        self._setup()
 
     def generate_states(self) -> tuple[chex.Array, dict[str, int]]:
         """Returns a tuple consisting of an array of all possible states and a dictionary
