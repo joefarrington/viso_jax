@@ -130,6 +130,7 @@ dmypy.json
 
 # Results saved by hydra
 outputs
+outputs_archive
 
 # Draft notebooks
 draft_notebooks
