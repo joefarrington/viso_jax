@@ -120,10 +120,10 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
         self.pu = self._calculate_pu()
         self.pz = self._calculate_pz()
 
-    def generate_states(self) -> tuple[chex.Array, dict[str, int]]:
-        """Returns a tuple consisting of an array of all possible states and a dictionary
-        that maps descriptive names of the components of the state to indices that can be
-        used to extract them from an individual state"""
+    def generate_states(self) -> tuple[list[tuple], dict[str, int]]:
+        """Returns a tuple consisting of a list of all possible states as tuples and a
+        dictionary that maps descriptive names of the components of the state to indices
+        that can be used to extract them from an individual state"""
         possible_states_a = self._generate_states_single_product(
             self.max_order_quantity_a
         )

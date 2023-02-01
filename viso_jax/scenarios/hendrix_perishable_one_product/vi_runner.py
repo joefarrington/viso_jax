@@ -90,10 +90,10 @@ class HendrixPerishableOneProductVIR(ValueIterationRunner):
             self._calculate_expected_sales_revenue_scan_state_batches, in_axes=(None, 0)
         )
 
-    def generate_states(self) -> tuple[chex.Array, dict[str, int]]:
-        """Returns a tuple consisting of an array of all possible states and a dictionary
-        that maps descriptive names of the components of the state to indices that can be
-        used to extract them from an individual state"""
+    def generate_states(self) -> tuple[list[tuple], dict[str, int]]:
+        """Returns a tuple consisting of a list of all possible states as tuples and a
+        dictionary that maps descriptive names of the components of the state to indices
+        that can be used to extract them from an individual state"""
         states = self._generate_states_single_product(self.max_order_quantity)
 
         # Use this dict to access specific parts of the state

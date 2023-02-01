@@ -132,10 +132,10 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
 
         self._setup()
 
-    def generate_states(self) -> tuple[chex.Array, dict[str, int]]:
-        """Returns a tuple consisting of an array of all possible states and a dictionary
-        that maps descriptive names of the components of the state to indices that can be
-        used to extract them from an individual state"""
+    def generate_states(self) -> tuple[list[tuple], dict[str, int]]:
+        """Returns a tuple consisting of a list of all possible states as tuples and a
+        dictionary that maps descriptive names of the components of the state to indices
+        that can be used to extract them from an individual state"""
 
         possible_orders = range(0, self.max_order_quantity + 1)
         product_arg = [possible_orders] * (self.max_useful_life - 1)
