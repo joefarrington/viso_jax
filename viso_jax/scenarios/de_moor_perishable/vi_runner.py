@@ -7,7 +7,7 @@ import numpyro
 from viso_jax.value_iteration.base_vi_runner import ValueIterationRunner
 from pathlib import Path
 from jax import tree_util
-from typing import Union, Tuple
+from typing import Union
 import chex
 
 # Enable logging
@@ -104,7 +104,7 @@ class DeMoorPerishableVIR(ValueIterationRunner):
 
         self._setup()
 
-    def generate_states(self) -> Tuple[chex.Array, dict[str, int]]:
+    def generate_states(self) -> tuple[chex.Array, dict[str, int]]:
         """Returns a tuple consisting of an array of all possible states and a dictionary
         that maps descriptive names of the components of the state to indices that can be
         used to extract them from an individual state"""
@@ -147,14 +147,14 @@ class DeMoorPerishableVIR(ValueIterationRunner):
         state_to_idx = jnp.array(state_to_idx, dtype=jnp.int32)
         return state_to_idx
 
-    def generate_actions(self) -> Tuple[chex.Array, list[str]]:
+    def generate_actions(self) -> tuple[chex.Array, list[str]]:
         """Returns a tuple consisting of an array of all possible actions and a
         list of descriptive names for each action dimension"""
         actions = jnp.arange(0, self.max_order_quantity + 1)
         action_labels = ["order_quantity"]
         return actions, action_labels
 
-    def generate_possible_random_outcomes(self) -> Tuple[chex.Array, dict[str, int]]:
+    def generate_possible_random_outcomes(self) -> tuple[chex.Array, dict[str, int]]:
         """Returns a tuple consisting of an array of all possible random outcomes and a dictionary
         that maps descriptive names of the components of a random outcome to indices that can be
         used to extract them from an individual random outcome."""
@@ -169,7 +169,7 @@ class DeMoorPerishableVIR(ValueIterationRunner):
         state: chex.Array,
         action: Union[int, chex.Array],
         random_outcome: chex.Array,
-    ) -> Tuple[chex.Array, float]:
+    ) -> tuple[chex.Array, float]:
         """Returns the next state and single-step reward for the provided state, action and random combination"""
         demand = random_outcome[self.pro_component_idx_dict["demand"]]
 
@@ -267,7 +267,7 @@ class DeMoorPerishableVIR(ValueIterationRunner):
 
     def _issue_one_step(
         self, remaining_demand: int, stock_element: int
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         """Fill demand with stock of one age, representing one element in the state"""
         remaining_stock = (stock_element - remaining_demand).clip(0)
         remaining_demand = (remaining_demand - stock_element).clip(0)
@@ -287,7 +287,7 @@ class DeMoorPerishableVIR(ValueIterationRunner):
         return reward
 
     ### Supporting functions for self.get_probabilities() ###
-    def _convert_gamma_parameters(self, mean: float, cov: float) -> Tuple[float, float]:
+    def _convert_gamma_parameters(self, mean: float, cov: float) -> tuple[float, float]:
         """Convert mean and coefficient of variation to gamma distribution parameters required
         by numpyro.distributions.Gamma"""
         alpha = 1 / (cov**2)
