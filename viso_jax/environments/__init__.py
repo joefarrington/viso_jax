@@ -7,6 +7,7 @@ from ..scenarios.hendrix_perishable_substitution_two_product.environment import 
 )
 from ..scenarios.mirjalili_perishable_platelet.environment import (
     MirjaliliPerishablePlateletGymnax,
+    MirjaliliPerishablePlateletDeterministicUsefulLifeGymnax,
 )
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "HendrixPerishableOneProductGymnax",
     "HendrixPerishableSubstitutionTwoProductGymnax",
     "MirjaliliPerishablePlateletGymnax",
+    "MirjaliliPerishablePlateletDeterministicUsefulLifeGymnax",
 ]

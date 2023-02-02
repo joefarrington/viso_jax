@@ -8,6 +8,7 @@ from viso_jax.environments import (
     HendrixPerishableOneProductGymnax,
     HendrixPerishableSubstitutionTwoProductGymnax,
     MirjaliliPerishablePlateletGymnax,
+    MirjaliliPerishablePlateletDeterministicUsefulLifeGymnax,
 )
 
 
@@ -24,6 +25,8 @@ def make(env_id: str, **env_kwargs) -> tuple[Environment, EnvParams]:
         env = HendrixPerishableSubstitutionTwoProductGymnax(**env_kwargs)
     elif env_id == "MirjaliliPerishablePlatelet":
         env = MirjaliliPerishablePlateletGymnax(**env_kwargs)
+    elif env_id == "MirjaliliPerishablePlateletDeterministicUsefulLife":
+        env = MirjaliliPerishablePlateletDeterministicUsefulLifeGymnax(**env_kwargs)
     else:
         raise ValueError("Environment ID is not registered.")
 
@@ -35,4 +38,5 @@ registered_envs = [
     "HendrixPerishableOneProduct",
     "HendrixPerishableSubstitutionTwoProduct",
     "MirjaliliPerishablePlatelet",
+    "MirjaliliPerishablePlateletDeterministicUsefulLife",
 ]
