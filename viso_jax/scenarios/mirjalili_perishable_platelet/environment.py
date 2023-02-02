@@ -144,10 +144,10 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
         )
         expiries = stock_after_issue[-1]
         closing_stock = stock_after_issue[0 : self.max_useful_life - 1]
-        holding = jnp.sum(closing_stock)
-
-        holding = jnp.sum(stock_after_issue[: self.max_useful_life - 1])
+        # Note that unlike De Moor scenario, holding costs include units about to expire
+        holding = jnp.sum(stock_after_issue)
         # Same order as params.cost_components
+
         transition_function_reward_output = jnp.hstack(
             [variable_order, fixed_order, shortage, expiries, holding]
         )
@@ -403,9 +403,9 @@ class MirjaliliPerishablePlateletDeterministicUsefulLifeGymnax(
         )
         expiries = stock_after_issue[-1]
         closing_stock = stock_after_issue[0 : self.max_useful_life - 1]
-        holding = jnp.sum(closing_stock)
+        # Note that unlike De Moor scenario, holding costs include units about to expire
+        holding = jnp.sum(stock_after_issue)
 
-        holding = jnp.sum(stock_after_issue[: self.max_useful_life - 1])
         # Same order as params.cost_components
         transition_function_reward_output = jnp.hstack(
             [variable_order, fixed_order, shortage, expiries, holding]

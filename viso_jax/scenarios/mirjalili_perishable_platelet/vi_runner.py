@@ -257,8 +257,9 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
             jnp.array([demand - jnp.sum(opening_stock_after_delivery), 0])
         )
         expiries = stock_after_issue[-1]
+        # Note that unlike De Moor scenario, holding costs include units about to expire
+        holding = jnp.sum(stock_after_issue)
         closing_stock = stock_after_issue[0 : self.max_useful_life - 1]
-        holding = jnp.sum(closing_stock)
 
         # These components must be in the same order as self.cost_components
         transition_function_reward_output = jnp.array(
@@ -613,8 +614,9 @@ class MDet(MirjaliliPerishablePlateletVIR):
             jnp.array([demand - jnp.sum(opening_stock_after_delivery), 0])
         )
         expiries = stock_after_issue[-1]
+        # Note that unlike De Moor scenario, holding costs include units about to expire
+        holding = jnp.sum(stock_after_issue)
         closing_stock = stock_after_issue[0 : self.max_useful_life - 1]
-        holding = jnp.sum(closing_stock)
 
         # These components must be in the same order as self.cost_components
         transition_function_reward_output = jnp.array(
