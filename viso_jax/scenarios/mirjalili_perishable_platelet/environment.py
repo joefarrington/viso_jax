@@ -31,13 +31,13 @@ class EnvParams:
 
     @classmethod
     def create_env_params(
-        # Default env params are for m=3, endo experiment 1
+        # Default env params are for m=3, exp1 (exogenous)
         cls,
         max_demand: int = 20,
         weekday_demand_negbin_n: chex.Array = [3.5, 11.0, 7.2, 11.1, 5.9, 5.5, 2.2],
         weekday_demand_negbin_delta: chex.Array = [5.7, 6.9, 6.5, 6.2, 5.8, 3.3, 3.4],
         shelf_life_at_arrival_distribution_c_0: chex.Array = [1.0, 0.5],
-        shelf_life_at_arrival_distribution_c_1: chex.Array = [0.4, 0.8],
+        shelf_life_at_arrival_distribution_c_1: chex.Array = [0.0, 0.0],
         variable_order_cost: float = 0.0,
         fixed_order_cost: float = 10.0,
         shortage_cost: float = 20.0,
@@ -143,6 +143,9 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
             jnp.array([demand - jnp.sum(opening_stock_after_delivery), 0])
         )
         expiries = stock_after_issue[-1]
+        closing_stock = stock_after_issue[0 : self.max_useful_life - 1]
+        holding = jnp.sum(closing_stock)
+
         holding = jnp.sum(stock_after_issue[: self.max_useful_life - 1])
         # Same order as params.cost_components
         transition_function_reward_output = jnp.hstack(
@@ -156,7 +159,6 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
 
         # Update the state - move to next weekday, age stock
         next_weekday = (state.weekday + 1) % 7
-        closing_stock = stock_after_issue[0 : self.max_useful_life - 1]
         state = EnvState(next_weekday, closing_stock, state.step + 1)
         done = self.is_terminal(state, params)
 
@@ -338,3 +340,122 @@ class MirjaliliPerishablePlateletGymnax(environment.Environment):
             "shortage_units": rollout_results["info"]["shortage"].mean(axis=-1),
             "order_made_%": order_made,
         }
+
+
+class MirjaliliPerishablePlateletDeterministicUsefulLifeGymnax(
+    MirjaliliPerishablePlateletGymnax
+):
+    def __init__(
+        self,
+        max_useful_life: int = 3,
+        max_order_quantity: int = 20,
+        initial_stock: list = [0, 0],
+    ):
+        super().__init__()
+        self.max_useful_life = max_useful_life
+        self.max_order_quantity = max_order_quantity
+        self.initial_stock = jnp.array(initial_stock, dtype=jnp_int)
+
+    def step_env(
+        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+        """Performs step transitions in the environment."""
+        prev_terminal = self.is_terminal(state, params)
+        cumulative_gamma = self.cumulative_gamma(state, params)
+
+        key, arrival_key, demand_key = jax.random.split(key, 3)
+
+        # Receive previous order, which also has full useful life remaining
+        opening_stock_after_delivery = jnp.hstack([action, state.stock])
+        # Clip so no element is greater that max_order_quantity
+        opening_stock_after_delivery = opening_stock_after_delivery.clip(
+            0, self.max_order_quantity
+        )
+        # Calculate this to report in info - units accepted for delivery
+        new_stock_accepted = opening_stock_after_delivery - jnp.hstack([0, state.stock])
+
+        # Generate demand
+        n = jax.lax.dynamic_slice(
+            params.weekday_demand_negbin_n, (state.weekday,), (1,)
+        )[0]
+        p = jax.lax.dynamic_slice(
+            params.weekday_demand_negbin_p, (state.weekday,), (1,)
+        )[0]
+        # tfd NegBin is distribution over successes until observe `total_count` failures,
+        # versus MM thesis where distribtion over failures until certain number of successes
+        # Therefore use 1-p for prob (prob of failure is 1 - prob of success)
+        demand_dist = tfp.distributions.NegativeBinomial(total_count=n, probs=(1 - p))
+        # Demand distribution is truncated at max_demand, so clip
+        demand = (
+            demand_dist.sample(seed=demand_key)
+            .clip(0, params.max_demand)
+            .astype(jnp_int)
+        )
+
+        # Meet demand
+        stock_after_issue = self._issue_oufo(opening_stock_after_delivery, demand)
+
+        # Compute variables required to calculate the cost
+        variable_order = jnp.array(action)
+        fixed_order = jnp.array(action > 1)
+        shortage = jnp.max(
+            jnp.array([demand - jnp.sum(opening_stock_after_delivery), 0])
+        )
+        expiries = stock_after_issue[-1]
+        closing_stock = stock_after_issue[0 : self.max_useful_life - 1]
+        holding = jnp.sum(closing_stock)
+
+        holding = jnp.sum(stock_after_issue[: self.max_useful_life - 1])
+        # Same order as params.cost_components
+        transition_function_reward_output = jnp.hstack(
+            [variable_order, fixed_order, shortage, expiries, holding]
+        )
+
+        # Calculate reward
+        reward = self._calculate_single_step_reward(
+            state, action, transition_function_reward_output, params
+        )
+
+        # Update the state - move to next weekday, age stock
+        next_weekday = (state.weekday + 1) % 7
+        state = EnvState(next_weekday, closing_stock, state.step + 1)
+        done = self.is_terminal(state, params)
+
+        return (
+            jax.lax.stop_gradient(self.get_obs(state)),
+            jax.lax.stop_gradient(state),
+            reward,
+            done,
+            {
+                "discount": self.discount(state, params),
+                "cumulative_gamma": cumulative_gamma,
+                "new_stock_accepted": new_stock_accepted,
+                "demand": demand,
+                "shortage": shortage,
+                "holding": holding,
+                "expiries": expiries,
+            },
+        )
+
+    # Start with zero inventory
+    def reset_env(
+        self, key: chex.PRNGKey, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState]:
+        """Performs resetting of environment."""
+        # Always start with no stock
+        # # By defauly, we start on a random weekday
+        # Otherwise, with fixed burn-in, would always
+        # count return from same weekday
+        weekday = jax.lax.cond(
+            params.initial_weekday == -1,
+            lambda _: jax.random.randint(key, (), 0, 7, dtype=jnp_int),
+            lambda _: params.initial_weekday.astype(jnp_int),
+            None,
+        )
+
+        state = EnvState(
+            weekday=weekday,
+            stock=self.initial_stock,
+            step=0,
+        )
+        return self.get_obs(state), state
