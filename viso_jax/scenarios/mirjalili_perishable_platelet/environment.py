@@ -365,7 +365,7 @@ class MirjaliliPerishablePlateletDeterministicUsefulLifeGymnax(
 
         key, arrival_key, demand_key = jax.random.split(key, 3)
 
-        # Receive previous order, which also has full useful life remaining
+        # Receive previous order, which all has full useful life remaining
         opening_stock_after_delivery = jnp.hstack([action, state.stock])
         # Clip so no element is greater that max_order_quantity
         opening_stock_after_delivery = opening_stock_after_delivery.clip(

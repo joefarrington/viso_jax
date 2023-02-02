@@ -9,7 +9,7 @@ variable_order_cost_a: ${scenario_settings.variable_order_cost_a}
 variable_order_cost_b: ${scenario_settings.variable_order_cost_b}
 sales_price_a: ${scenario_settings.sales_price_a}
 sales_price_b: ${scenario_settings.sales_price_b}
-max_batch_size: 2000
+max_batch_size: 5000
 epsilon: 1e-4
 gamma: ${scenario_settings.gamma}
 checkpoint_frequency: 1  # Zero for no checkpoints
