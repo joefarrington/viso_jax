@@ -1,0 +1,22 @@
+# @package _global_
+
+defaults:
+  - override /rollout_wrapper: hendrix_perishable_substitution_two_product
+  - override /scenario_settings: hendrix_perishable_substitution_two_product/m3/exp4
+  - override /policy: waste_conscious_S_policy
+
+exp_name: hendrix_perishable_substitution_two_product/m3/exp4
+
+param_search:
+  search_bounds:
+    all_params:
+    S_a:
+      low: 0
+      high: 42
+    S_b:
+      low: 0
+      high: 18
+  sampler:
+    _target_: optuna.samplers.NSGAIISampler
+    population_size: 50
+  early_stopping_rounds: 5
