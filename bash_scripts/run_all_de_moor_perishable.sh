@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 scenario=de_moor_perishable
-max_useful_life=( 2 3 4 5)
+max_useful_lives=( 2 3 4 5)
 experiments=( 1 2 3 4 5 6 7 8)
 date_now=$(date +"%Y-%m-%d")
 time_now=$(date +"%H-%M-%S")
 
 cd ../viso_jax/value_iteration
 
-for m in ${max_useful_life[@]}
+for m in ${max_useful_lives[@]}
 do
     for exp in ${experiments[@]}
     do  
@@ -20,7 +20,7 @@ done
 
 cd ../simopt
 
-for m in ${max_useful_life[@]}
+for m in ${max_useful_lives[@]}
 do
     for exp in ${experiments[@]}
     do  

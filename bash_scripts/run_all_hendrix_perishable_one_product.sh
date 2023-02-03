@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 scenario=hendrix_perishable_one_product
-max_useful_life=( 2 3 )
+max_useful_lives=( 2 3 )
 experiments=( 1 2 )
 date_now=$(date +"%Y-%m-%d")
 time_now=$(date +"%H-%M-%S")
 
 cd ../viso_jax/value_iteration
 
-for m in ${max_useful_life[@]}
+for m in ${max_useful_lives[@]}
 do
     for exp in ${experiments[@]}
     do  
@@ -20,7 +20,7 @@ done
 
 cd ../simopt
 
-for m in ${max_useful_life[@]}
+for m in ${max_useful_lives[@]}
 do
     for exp in ${experiments[@]}
     do  
