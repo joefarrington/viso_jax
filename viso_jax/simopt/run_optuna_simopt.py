@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 import pandas as pd
 import optuna
+from typing import Dict, Tuple
 from optuna.study import Study
 import jax
 import jax.numpy as jnp
@@ -22,7 +23,7 @@ log = logging.getLogger(__name__)
 
 def param_search_bounds_from_config(
     cfg: DictConfig, policy: HeuristicPolicy
-) -> dict[str, int]:
+) -> Dict[str, int]:
     """Create a dict of search bounds for each parameter from the config file"""
     # Specify search bounds for each parameter
     if cfg.param_search.search_bounds.all_params is None:
