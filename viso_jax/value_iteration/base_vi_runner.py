@@ -6,7 +6,7 @@ import re
 import logging
 import math
 from pathlib import Path
-from typing import Union, Tuple, Dict
+from typing import Union, Tuple, Dict, List
 import chex
 
 # Enable logging
@@ -56,8 +56,8 @@ class ValueIterationRunner:
     # In addition to the eight methods below, self._tree_flatten
     #  should also be updated to include any subclass properties
 
-    def generate_states(self) -> Tuple[chex.Array, Union[None, Dict[str, int]]]:
-        """Returns a tuple consisting of an array of all possible states and a dictionary
+    def generate_states(self) -> Tuple[List[Tuple], Union[None, Dict[str, int]]]:
+        """Returns a tuple consisting of alist of all possible state as tuples and a dictionary
         that maps descriptive names of the components of the state to indices that can be
         used to extract them from an individual state.
         The array of states should be of shape (N_states, state_size)
@@ -71,7 +71,7 @@ class ValueIterationRunner:
         a total number of elements equal to N_states"""
         raise NotImplementedError
 
-    def generate_actions(self) -> Tuple[chex.Array, list[str]]:
+    def generate_actions(self) -> Tuple[chex.Array, List[str]]:
         """Returns a tuple consisting of an array of all possible actions and a
         list of descriptive names for each action dimension (e.g. if the action consists
         of order quantities for one product, the list should contain a single string,

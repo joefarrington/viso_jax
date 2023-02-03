@@ -3,7 +3,7 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 from gymnax.environments import environment, spaces
-from typing import Tuple, Optional, Union, Dict
+from typing import Tuple, Optional, Union, Dict, List
 import chex
 from flax import struct
 from tensorflow_probability.substrates import jax as tfp
@@ -349,7 +349,7 @@ class MirjaliliPerishablePlateletDeterministicUsefulLifeGymnax(
         self,
         max_useful_life: int = 3,
         max_order_quantity: int = 20,
-        initial_stock: list = [0, 0],
+        initial_stock: List = [0, 0],
     ):
         super().__init__()
         self.max_useful_life = max_useful_life

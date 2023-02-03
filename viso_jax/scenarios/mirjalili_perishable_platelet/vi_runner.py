@@ -11,7 +11,7 @@ from omegaconf import OmegaConf
 from pathlib import Path
 from jax import tree_util
 import numpyro
-from typing import Union
+from typing import Union, List, Tuple, Dict
 import chex
 
 # Enable logging
@@ -26,11 +26,11 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
     def __init__(
         self,
         max_demand: int,
-        weekday_demand_negbin_n: list[float],  # [M, T, W, T, F, S, S]
-        weekday_demand_negbin_delta: list[float],  # [M, T, W, T, F, S, S]
+        weekday_demand_negbin_n: List[float],  # [M, T, W, T, F, S, S]
+        weekday_demand_negbin_delta: List[float],  # [M, T, W, T, F, S, S]
         max_useful_life: int,
-        shelf_life_at_arrival_distribution_c_0: list[float],
-        shelf_life_at_arrival_distribution_c_1: list[float],
+        shelf_life_at_arrival_distribution_c_0: List[float],
+        shelf_life_at_arrival_distribution_c_1: List[float],
         max_order_quantity: int,
         variable_order_cost: float,
         fixed_order_cost: float,
@@ -132,7 +132,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
 
         self._setup()
 
-    def generate_states(self) -> tuple[list[tuple], dict[str, int]]:
+    def generate_states(self) -> Tuple[List[tuple], Dict[str, int]]:
         """Returns a tuple consisting of a list of all possible states as tuples and a
         dictionary that maps descriptive names of the components of the state to indices
         that can be used to extract them from an individual state"""
@@ -168,14 +168,14 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         state_to_idx = jnp.array(state_to_idx, dtype=jnp.int32)
         return state_to_idx
 
-    def generate_actions(self) -> tuple[chex.Array, list[str]]:
+    def generate_actions(self) -> Tuple[chex.Array, List[str]]:
         """Returns a tuple consisting of an array of all possible actions and a
         list of descriptive names for each action dimension"""
         actions = jnp.arange(0, self.max_order_quantity + 1)
         action_labels = ["order_quantity"]
         return actions, action_labels
 
-    def generate_possible_random_outcomes(self) -> tuple[chex.Array, dict[str, int]]:
+    def generate_possible_random_outcomes(self) -> Tuple[chex.Array, Dict[str, int]]:
         """Returns a tuple consisting of an array of all possible random outcomes and a dictionary
         that maps descriptive names of the components of a random outcome to indices that can be
         used to extract them from an individual random outcome."""
@@ -219,7 +219,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         state: chex.Array,
         action: Union[int, chex.Array],
         random_outcome: chex.Array,
-    ) -> tuple[chex.Array, float]:
+    ) -> Tuple[chex.Array, float]:
         """Returns the next state and single-step reward for the provided state, action and random combination"""
         demand = random_outcome[self.pro_component_idx_dict["demand"]]
         max_stock_received = random_outcome[
@@ -421,8 +421,8 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
     ### Supporting functions for self._init__() ###
     def _is_shelf_life_at_arrival_distribution_valid(
         self,
-        shelf_life_at_arrival_distribution_c_0: list[float],
-        shelf_life_at_arrival_distribution_c_1: list[float],
+        shelf_life_at_arrival_distribution_c_0: List[float],
+        shelf_life_at_arrival_distribution_c_1: List[float],
         max_useful_life: int,
     ) -> bool:
         """Check that the shelf life at arrival distribution parameters are valid"""
@@ -514,7 +514,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
 
     def _read_multiple_previous_values(
         self, current_iteration: int, period: int
-    ) -> dict[int, chex.Array]:
+    ) -> Dict[int, chex.Array]:
         """Load the value functions from multiple previous iterations fo calculate period deltas"""
         values_dict = {}
         for p in range(1, period + 1):

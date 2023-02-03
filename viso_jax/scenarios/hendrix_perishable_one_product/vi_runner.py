@@ -7,7 +7,7 @@ import logging
 from viso_jax.value_iteration.base_vi_runner import ValueIterationRunner
 from pathlib import Path
 from jax import tree_util
-from typing import Union, Dict, Tuple
+from typing import Union, Dict, Tuple, List
 import chex
 
 # Enable logging
@@ -90,7 +90,7 @@ class HendrixPerishableOneProductVIR(ValueIterationRunner):
             self._calculate_expected_sales_revenue_scan_state_batches, in_axes=(None, 0)
         )
 
-    def generate_states(self) -> Tuple[list[Tuple], Dict[str, int]]:
+    def generate_states(self) -> Tuple[List[Tuple], Dict[str, int]]:
         """Returns a tuple consisting of a list of all possible states as tuples and a
         dictionary that maps descriptive names of the components of the state to indices
         that can be used to extract them from an individual state"""
@@ -111,7 +111,7 @@ class HendrixPerishableOneProductVIR(ValueIterationRunner):
         state_to_idx = jnp.array(state_to_idx, dtype=jnp.int32)
         return state_to_idx
 
-    def generate_actions(self) -> Tuple[chex.Array, list[str]]:
+    def generate_actions(self) -> Tuple[chex.Array, List[str]]:
         """Returns a tuple consisting of an array of all possible actions and a
         list of descriptive names for each action dimension"""
         actions = jnp.arange(0, self.max_order_quantity + 1)
@@ -220,7 +220,7 @@ class HendrixPerishableOneProductVIR(ValueIterationRunner):
             return False
 
     ### Supporting functions for self.generate_states() ###
-    def _generate_states_single_product(self, max_order_quantity: int) -> list[Tuple]:
+    def _generate_states_single_product(self, max_order_quantity: int) -> List[Tuple]:
         """Returns possible states, as a list of tuples"""
         possible_orders = range(0, max_order_quantity + 1)
         product_arg = [possible_orders] * self.max_useful_life

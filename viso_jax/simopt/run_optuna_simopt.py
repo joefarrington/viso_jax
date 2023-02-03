@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 import pandas as pd
 import optuna
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 from optuna.study import Study
 import jax
 import jax.numpy as jnp
@@ -52,8 +52,8 @@ def param_search_bounds_from_config(
 
 
 def grid_search_space_from_config(
-    search_bounds: dict[str, int], policy: HeuristicPolicy
-) -> dict[str, list[int]]:
+    search_bounds: Dict[str, int], policy: HeuristicPolicy
+) -> Dict[str, List[int]]:
     """Create a grid search space from the search bounds"""
     search_space = {
         p: list(
