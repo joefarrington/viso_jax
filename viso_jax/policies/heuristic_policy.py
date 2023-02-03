@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import numpy as np
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import chex
 import pandas as pd
 import viso_jax
@@ -47,14 +47,14 @@ class HeuristicPolicy:
 
     def _get_param_col_names(
         self, env_id: str, env: Environment, env_params: Dict[str, Any]
-    ) -> list[str]:
+    ) -> List[str]:
         """Get the column names for the policy parameters - these are the different types
         of parameters e.g. target stock level or reorder point"""
         raise NotImplementedError
 
     def _get_param_row_names(
         self, env_id: str, env: Environment, env_params: Dict[str, Any]
-    ) -> list[str]:
+    ) -> List[str]:
         """Get the row names for the policy parameters - these are the names of the different levels of a
         given paramter, e.g. for different days of the week or different products"""
         raise NotImplementedError
