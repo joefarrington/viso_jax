@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Optional
+from typing import Optional, Dict, Any
 import jax.numpy as jnp
 import viso_jax
 from viso_jax.registration import registered_envs
@@ -9,8 +9,8 @@ class VIPolicy(object):
     def __init__(
         self,
         env_id: str,
-        env_kwargs: Optional[dict] = {},
-        env_params: Optional[dict] = {},
+        env_kwargs: Optional[Dict[str, Any]] = {},
+        env_params: Optional[Dict[str, Any]] = {},
         policy_params_filepath: Optional[str] = None,
         policy_params_df: Optional[pd.DataFrame] = None,
     ):

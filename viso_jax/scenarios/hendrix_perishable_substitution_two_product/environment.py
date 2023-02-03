@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 from gymnax.environments import environment, spaces
-from typing import Tuple
+from typing import Tuple, Dict
 import chex
 from flax import struct
 import numpyro
@@ -75,7 +75,7 @@ class HendrixPerishableSubstitutionTwoProductGymnax(environment.Environment):
 
     def step_env(
         self, key: chex.PRNGKey, state: EnvState, action: chex.Array, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+    ) -> Tuple[chex.Array, EnvState, float, bool, Dict]:
         """Performs step transitions in the environment."""
         prev_terminal = self.is_terminal(state, params)
         cumulative_gamma = self.cumulative_gamma(state, params)
@@ -264,7 +264,7 @@ class HendrixPerishableSubstitutionTwoProductGymnax(environment.Environment):
         )
 
     @classmethod
-    def calculate_kpis(cls, rollout_results: dict) -> dict[str, float]:
+    def calculate_kpis(cls, rollout_results: Dict) -> Dict[str, float]:
         """Calculate KPIs for each rollout, using the output of a rollout from RolloutWrapper"""
         service_level_a = (
             rollout_results["info"]["demand_a"] - rollout_results["info"]["shortage_a"]

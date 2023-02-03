@@ -8,7 +8,7 @@ from viso_jax.value_iteration.base_vi_runner import ValueIterationRunner
 from pathlib import Path
 from jax import tree_util
 from scipy import stats
-from typing import Union
+from typing import Union, Tuple, Dict
 import chex
 
 # Enable logging
@@ -120,7 +120,7 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
         self.pu = self._calculate_pu()
         self.pz = self._calculate_pz()
 
-    def generate_states(self) -> tuple[list[tuple], dict[str, int]]:
+    def generate_states(self) -> Tuple[list[Tuple], Dict[str, int]]:
         """Returns a tuple consisting of a list of all possible states as tuples and a
         dictionary that maps descriptive names of the components of the state to indices
         that can be used to extract them from an individual state"""
@@ -151,7 +151,7 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
         state_to_idx = jnp.array(state_to_idx, dtype=jnp.int32)
         return state_to_idx
 
-    def generate_actions(self) -> tuple[chex.Array, list[str]]:
+    def generate_actions(self) -> Tuple[chex.Array, list[str]]:
         """Returns a tuple consisting of an array of all possible actions and a
         list of descriptive names for each action dimension"""
         actions = jnp.array(
@@ -165,7 +165,7 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
         action_labels = ["order_quantity_a", "order_quantity_b"]
         return actions, action_labels
 
-    def generate_possible_random_outcomes(self) -> tuple[chex.Array, dict[str, int]]:
+    def generate_possible_random_outcomes(self) -> Tuple[chex.Array, Dict[str, int]]:
         """Returns a tuple consisting of an array of all possible random outcomes and a dictionary
         that maps descriptive names of the components of a random outcome to indices that can be
         used to extract them from an individual random outcome."""
@@ -187,7 +187,7 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
         state: chex.Array,
         action: Union[int, chex.Array],
         random_outcome: chex.Array,
-    ) -> tuple[chex.Array, float]:
+    ) -> Tuple[chex.Array, float]:
         """Returns the next state and single-step reward for the provided state, action and random combination"""
         opening_stock_a = state[
             self.state_component_idx_dict[
@@ -299,13 +299,13 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
             return False
 
     ### Support functions for self.generate_states() ###
-    def _generate_states_single_product(self, max_order_quantity: int) -> list[tuple]:
+    def _generate_states_single_product(self, max_order_quantity: int) -> list[Tuple]:
         """Returns possible states, as a list of tuples"""
         possible_orders = range(0, max_order_quantity + 1)
         product_arg = [possible_orders] * self.max_useful_life
         return list(itertools.product(*product_arg))
 
-    def _generate_two_product_state_component_idx_dict(self) -> dict[str, int]:
+    def _generate_two_product_state_component_idx_dict(self) -> Dict[str, int]:
         """Returns a dictionary that maps descriptive names of the components of a state
         to indices of the elements in the state array"""
         state_component_idx_dict = {}
@@ -336,7 +336,7 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
 
     def _issue_one_step(
         self, remaining_demand: chex.Array, stock_element: int
-    ) -> tuple[int, int]:
+    ) -> Tuple[int, int]:
         """Fill demand with stock of one age, representing one element in the state"""
         remaining_stock = (stock_element - remaining_demand).clip(0)
         remaining_demand = (remaining_demand - stock_element).clip(0)
@@ -498,7 +498,7 @@ class HendrixPerishableSubstitutionTwoProductVIR(ValueIterationRunner):
 
     def _calculate_expected_sales_revenue_state_batch(
         self, carry: None, batch_of_states: chex.Array
-    ) -> tuple[None, chex.Array]:
+    ) -> Tuple[None, chex.Array]:
         """Calculate the expected sales revenue for a batch of states"""
         revenue = self._calculate_expected_sales_revenue_vmap_states(batch_of_states)
         return carry, revenue
