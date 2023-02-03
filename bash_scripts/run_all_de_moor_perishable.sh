@@ -6,6 +6,8 @@ experiments=( 1 2 3 4 5 6 7 8)
 date_now=$(date +"%Y-%m-%d")
 time_now=$(date +"%H-%M-%S")
 
+echo "Running all experiments for scenario ${scenario} at ${date_now} ${time_now}"
+
 cd ../viso_jax/value_iteration
 
 for m in ${max_useful_lives[@]}
