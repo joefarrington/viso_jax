@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import numpy as np
-from typing import Optional
+from typing import Optional, Dict, Any
 import chex
 import pandas as pd
 import viso_jax
@@ -12,8 +12,8 @@ class HeuristicPolicy:
     def __init__(
         self,
         env_id: str,
-        env_kwargs: Optional[dict] = {},
-        env_params: Optional[dict] = {},
+        env_kwargs: Optional[Dict[str, Any]] = {},
+        env_params: Optional[Dict[str, Any]] = {},
         policy_params_filepath: Optional[str] = None,
     ):
 
@@ -46,21 +46,21 @@ class HeuristicPolicy:
             self.policy_params = self.load_policy_params(policy_params_filepath)
 
     def _get_param_col_names(
-        self, env_id: str, env: Environment, env_params: dict
+        self, env_id: str, env: Environment, env_params: Dict[str, Any]
     ) -> list[str]:
         """Get the column names for the policy parameters - these are the different types
         of parameters e.g. target stock level or reorder point"""
         raise NotImplementedError
 
     def _get_param_row_names(
-        self, env_id: str, env: Environment, env_params: dict
+        self, env_id: str, env: Environment, env_params: Dict[str, Any]
     ) -> list[str]:
         """Get the row names for the policy parameters - these are the names of the different levels of a
         given paramter, e.g. for different days of the week or different products"""
         raise NotImplementedError
 
     def _get_forward_method(
-        self, env_id: str, env: Environment, env_params: dict
+        self, env_id: str, env: Environment, env_params: Dict[str, Any]
     ) -> callable:
         """Get the forward method for the policy - this is the function that returns the action"""
         raise NotImplementedError
