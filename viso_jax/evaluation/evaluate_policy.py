@@ -7,13 +7,14 @@ import pandas as pd
 import jax
 from viso_jax.utils.kpis import get_kpi_function
 from viso_jax.utils.yaml import to_yaml
+from typing import Dict
 
 # Enable logging
 log = logging.getLogger(__name__)
 
 
 def create_evaluation_output_summary(
-    cfg: DictConfig, rollout_results: dict[str, chex.Array]
+    cfg: DictConfig, rollout_results: Dict[str, chex.Array]
 ) -> pd.DataFrame:
     """Create a summary of the evaluation output, including KPIs"""
 
