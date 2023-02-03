@@ -1,7 +1,7 @@
 # This is based on gymnax.registration by Robert T. Lange
 # https://github.com/RobertTLange/gymnax/blob/main/gymnax/registration.py
 # Modified from commit b9f4795
-
+from typing import Tuple
 from gymnax.environments.environment import Environment, EnvParams
 from viso_jax.environments import (
     DeMoorPerishableGymnax,
@@ -12,7 +12,7 @@ from viso_jax.environments import (
 )
 
 
-def make(env_id: str, **env_kwargs) -> tuple[Environment, EnvParams]:
+def make(env_id: str, **env_kwargs) -> Tuple[Environment, EnvParams]:
     """Version of gymnax.make/OpenAI gym.make for our envs"""
 
     if env_id not in registered_envs:

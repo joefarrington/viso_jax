@@ -6,7 +6,7 @@ import re
 import logging
 import math
 from pathlib import Path
-from typing import Union, Tuple
+from typing import Union, Tuple, Dict
 import chex
 
 # Enable logging
@@ -56,7 +56,7 @@ class ValueIterationRunner:
     # In addition to the eight methods below, self._tree_flatten
     #  should also be updated to include any subclass properties
 
-    def generate_states(self) -> Tuple[chex.Array, Union[None, dict[str, int]]]:
+    def generate_states(self) -> Tuple[chex.Array, Union[None, Dict[str, int]]]:
         """Returns a tuple consisting of an array of all possible states and a dictionary
         that maps descriptive names of the components of the state to indices that can be
         used to extract them from an individual state.
@@ -84,7 +84,7 @@ class ValueIterationRunner:
 
     def generate_possible_random_outcomes(
         self,
-    ) -> Tuple[chex.Array, Union[None, dict[str, int]]]:
+    ) -> Tuple[chex.Array, Union[None, Dict[str, int]]]:
         """Returns a tuple consisting of an array of all possible random outcomes and a dictionary
         that maps descriptive names of the components of a random outcome to indices that can be
         used to extract them from an individual random outcome.
@@ -149,7 +149,7 @@ class ValueIterationRunner:
         min_iter: int = 1,
         save_final_values: bool = True,
         save_policy: bool = True,
-    ) -> dict[str, Union[pd.DataFrame, dict]]:
+    ) -> Dict[str, Union[pd.DataFrame, Dict]]:
         """Run value iteration for a given number of iterations, or until convergence. Optionally save checkpoints of the
 
         Args:
