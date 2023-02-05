@@ -16,7 +16,7 @@ do
     do  
         echo "Running value iteration for m=${m}, exp=${exp}"
         python run_value_iteration.py +experiment=${scenario}/m${m}/exp${exp} \
-        hydra.run.dir=./outputs/run_all_de_moor_perishable/${date_now}/${time_now}/m${m}/exp${exp}
+        hydra.run.dir=./outputs/run_all_${scenario}/${date_now}/${time_now}/m${m}/exp${exp}
     done
 done
 
@@ -28,8 +28,8 @@ do
     do  
         echo "Running simulation optimization for m=${m}, exp=${exp}"
         python run_optuna_simopt.py +experiment=${scenario}/m${m}/exp${exp} \
-        hydra.run.dir=./outputs/run_all_de_moor_perishable/${date_now}/${time_now}/m${m}/exp${exp}
+        hydra.run.dir=./outputs/run_all_${scenario}/${date_now}/${time_now}/m${m}/exp${exp}
     done
 done
 
-echo "All experiments completed."
+echo "All experiments completed.
