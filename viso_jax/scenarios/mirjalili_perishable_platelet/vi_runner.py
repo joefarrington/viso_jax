@@ -568,15 +568,29 @@ tree_util.register_pytree_node(
 )
 
 
-class MDet(MirjaliliPerishablePlateletVIR):
-    def generate_possible_random_outcomes(self):
+class MirjaliliPerishablePlateletDeterministicUsefulLifeVIR(
+    MirjaliliPerishablePlateletVIR
+):
+    """Class to run value iteration for mirjalili_perishable_platelet scenario where
+    the remaining useful life on arrival is deterministic"""
+
+    def generate_possible_random_outcomes(self) -> Tuple[chex.Array, Dict[str, int]]:
+        """Returns a tuple consisting of an array of all possible random outcomes and a dictionary
+        that maps descriptive names of the components of a random outcome to indices that can be
+        used to extract them from an individual random outcome."""
         possible_random_outcomes = jnp.arange(0, self.max_demand + 1).reshape(-1, 1)
         pro_component_idx_dict = {}
         pro_component_idx_dict["demand"] = 0
 
         return possible_random_outcomes, pro_component_idx_dict
 
-    def get_probabilities(self, state, action, possible_random_outcomes):
+    def get_probabilities(
+        self,
+        state: chex.Array,
+        action: Union[int, chex.Array],
+        possible_random_outcomes: chex.Array,
+    ) -> chex.Array:
+        """Returns an array of the probabilities of each possible random outcome for the provides state-action pair"""
         weekday = state[self.state_component_idx_dict["weekday"]]
         n = self.weekday_demand_negbin_n[weekday]
         p = self.weekday_demand_negbin_p[weekday]
@@ -593,7 +607,13 @@ class MDet(MirjaliliPerishablePlateletVIR):
 
         return demand_probs
 
-    def deterministic_transition_function(self, state, action, random_outcome):
+    def deterministic_transition_function(
+        self,
+        state: chex.Array,
+        action: Union[int, chex.Array],
+        random_outcome: chex.Array,
+    ) -> Tuple[chex.Array, float]:
+        """Returns the next state and single-step reward for the provided state, action and random combination"""
         demand = random_outcome[self.pro_component_idx_dict["demand"]]
         opening_stock_after_delivery = jnp.hstack(
             [
