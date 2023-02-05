@@ -38,7 +38,7 @@ Adapted from the single product scenarios in <i>"On computing optimal policies i
 
 Adapted from the two product scenarios in <i>"On computing optimal policies in perishable inventory control using value iteration"</i> by [Hendrix et al (2019)](https://doi.org/10.1002/cmm4.1027)
 
-Additional experimental settings are taken from [Ortega et al (2019)](https://doi.org/10.1007/s11227-018-2692-z). 
+Additional experimental settings are taken from [Ortega et al (2019)](https://doi.org/10.1007/s11227-018-2692-z).
 
 ### mirjalili_perishable_platelet
 
@@ -47,3 +47,29 @@ Adapted from the scenario in Chapter 6 of <i>"Data-driven modelling and control 
 ## Running experiments
 
 ## Colab examples
+
+## Recommended resources
+
+### JAX
+
+#### Getting started
+
+The [JAX documentation](https://jax.readthedocs.io/en/latest/index.html) includes [JAX 101](https://jax.readthedocs.io/en/latest/jax-101/index.html), a set of interactive introductory tutorials. We also recommed reading [JAX - the sharp bits](https://jax.readthedocs.io/en/latest/notebooks/Common_Gotchas_in_JAX.html) to understand key differences between NumPy and JAX.
+
+The [Awesome JAX](https://github.com/n2cholas/awesome-jax) GitHub repository contains links to a wide variety of Python libraries and projects based on JAX.
+
+#### Value iteration
+
+Thomas J Sargent and John Stachurski provide an [interactive tutorial](https://notes.quantecon.org/submission/622ed4daf57192000f918c61) implementing value iteration in JAX for an economics problem and comparing the speed of two NumPy-based approaches with GPU-accelerated JAX.
+
+### Hydra
+
+We specified the configurations of our experiments using [Hydra](https://hydra.cc/), which support composable configuration files and provides a command line interface for overriding configuration items.
+
+### Gymnax
+
+We created reinforcement learning environments for each scenario using [Gymnax](https://github.com/RobertTLange/gymnax). Gymnax provides an API similar to the OpenAI gym API, but allows simulated rollouts to run in parallel on GPU. This is particularly helpful for simulation optimization because it allows many possible parameters for the heuristic policies (e.g. a base-stock policy) to be evaluated at the same time, each on many parallel rollouts.
+
+### Optuna
+
+We used [Optuna](https://optuna.readthedocs.io/en/stable/) to search the parameter spaces for heuristic policies in our simulation optimization experiments.
