@@ -219,7 +219,7 @@ class ValueIterationRunner:
             values_df = pd.DataFrame(V, index=self.state_tuples, columns=["V"])
             values_df.to_csv(self.output_directory / f"values_{i}.csv")
             log.info("Final values saved")
-            to_return[f"V_{i}"] = values_df
+            to_return[f"V"] = values_df
 
         if save_policy:
             log.info("Extracting and saving policy")
