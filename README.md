@@ -48,6 +48,10 @@ Adapted from the scenario in Chapter 6 of <i>"Data-driven modelling and control 
 
 ## Colab examples
 
+## Tests
+
+The test suite is intended to be high level, comparing outputs of our methods (e.g. policies, heuristic policy parameters and mean returns) to those reported in the original papers. Some tests may fail due to an out-of-memory error if run on a GPU with less than 12GB of VRAM because the maximum batch sizes (for value iteration) and number of rollouts to perform in parallel (for policy evaluation) have been set to run on the Nvidia GTX 3060 used during development. 
+
 ## Recommended resources
 
 ### JAX
