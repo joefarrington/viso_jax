@@ -22,8 +22,7 @@ exp_name: de_moor_perishable/m2/exp1 # Default settings correspond to this exper
 run_settings:
     max_iter: 5000
     min_iter: 1
-    save_final_values: True
-    save_policy: True
+    extract_policy: True
 
 jax_settings:
   double_precision: True

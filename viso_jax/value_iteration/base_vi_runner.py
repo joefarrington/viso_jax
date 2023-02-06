@@ -159,8 +159,7 @@ class ValueIterationRunner:
         self,
         max_iter: int = 100,
         min_iter: int = 1,
-        save_final_values: bool = True,
-        save_policy: bool = True,
+        extract_policy: bool = True,
     ) -> Dict[str, Union[pd.DataFrame, Dict]]:
         """Run value iteration for a given number of iterations, or until convergence. Optionally save checkpoints of the
 
@@ -168,11 +167,10 @@ class ValueIterationRunner:
             value function after each iteration, and the final value function and policy at the end of the run.
             max_iter: maximum number of iterations to run
             min_iter: minimum number of iterations to run, even if convergence is reached before this
-            save_final_values: whether to save the final value function as a csv file
-            save_policy: whether to save the final policy as a csv file
+            extract_policy: whether to save the final policy as a csv file
 
         Returns:
-            A dictionary containing information to log and, optionally, the final value function and policy
+            A dictionary containing information to log, the final value function and, optionally, the policy
 
         """
 
@@ -213,23 +211,16 @@ class ValueIterationRunner:
 
         to_return = {}
 
-        # Potentially save down final values and policy
-        if save_final_values:
-            log.info("Saving final values")
-            values_df = pd.DataFrame(V, index=self.state_tuples, columns=["V"])
-            values_df.to_csv(self.output_directory / f"values_{i}.csv")
-            log.info("Final values saved")
-            to_return[f"V"] = values_df
+        # Put final values into pd.DataFrame to return
+        values_df = pd.DataFrame(V, index=self.state_tuples, columns=["V"])
+        to_return[f"V"] = values_df
 
-        if save_policy:
-            log.info("Extracting and saving policy")
-
+        # If extract_policy is True, extract policy with one-step ahead search
+        # to return in output
+        if extract_policy:
+            log.info("Extracting final policy")
             best_order_actions_df = self.get_policy(V)
-
-            best_order_actions_df.to_csv(
-                self.output_directory / "best_order_actions.csv"
-            )
-            log.info("Policy saved")
+            log.info("Final policy extracted")
             to_return["policy"] = best_order_actions_df
 
         to_return["output_info"] = self.output_info

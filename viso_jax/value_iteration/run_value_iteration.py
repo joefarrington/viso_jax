@@ -7,6 +7,7 @@ from viso_jax.utils.yaml import to_yaml, from_yaml
 import jax
 import pandas as pd
 from omegaconf.dictconfig import DictConfig
+from pathlib import Path
 
 # Enable logging
 log = logging.getLogger(__name__)
@@ -20,10 +21,22 @@ def main(cfg: DictConfig) -> None:
     if cfg.jax_settings.double_precision:
         jax_config.update("jax_enable_x64", True)
 
-    output_dir = hydra.core.hydra_config.HydraConfig.get()["runtime"]["output_dir"]
-    print(output_dir)
+    output_dir = Path(
+        hydra.core.hydra_config.HydraConfig.get()["runtime"]["output_dir"]
+    )
     VIR = hydra.utils.instantiate(cfg.vi_runner, output_directory=output_dir)
     vi_output = VIR.run_value_iteration(**cfg.run_settings)
+
+    # Save final values
+    log.info("Saving final values")
+    vi_output["V"].to_csv(output_dir / f"V.csv")
+    log.info("Final values saved")
+
+    # Save final policy if extracted
+    if "policy" in vi_output.keys():
+        log.info("Saving final policy")
+        vi_output["policy"].to_csv(output_dir / f"policy.csv")
+        log.info("Final policy saved")
 
     vi_complete_time = datetime.now()
     vi_run_time = vi_complete_time - start_time
