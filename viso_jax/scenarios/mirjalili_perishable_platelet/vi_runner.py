@@ -145,7 +145,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
 
         self._setup()
 
-    def generate_states(self) -> Tuple[List[tuple], Dict[str, int]]:
+    def generate_states(self) -> Tuple[List[Tuple], Dict[str, int]]:
         """Returns a tuple consisting of a list of all possible states as tuples and a
         dictionary that maps descriptive names of the components of the state to indices
         that can be used to extract them from an individual state"""
@@ -472,7 +472,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
 
     def _issue_one_step(
         self, remaining_demand: int, stock_element: int
-    ) -> tuple[int, int]:
+    ) -> Tuple[int, int]:
         """Fill demand with stock of one age, representing one element in the state"""
         remaining_stock = (stock_element - remaining_demand).clip(0)
         remaining_demand = (remaining_demand - stock_element).clip(0)
@@ -495,7 +495,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
 
     def _calculate_period_deltas_without_discount(
         self, V: chex.Array, current_iteration: int, period: int
-    ) -> tuple[float, float]:
+    ) -> Tuple[float, float]:
         """Return the min and max change in the value function over a period if there is no discount factor"""
         # If there's no discount factor, just subtract Values one period ago
         # from current value estimate
@@ -508,7 +508,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
 
     def _calculate_period_deltas_with_discount(
         self, V: chex.Array, current_iteration: int, period: int, gamma: float
-    ) -> tuple[float, float]:
+    ) -> Tuple[float, float]:
         """Return the min and max undiscounted change in the value function over a period
         if there is a discount factor"""
         # If there is a discount factor, we need to sum the differences between
