@@ -6,8 +6,9 @@ import re
 import logging
 import math
 from pathlib import Path
-from typing import Union, Tuple, Dict, List
+from typing import Union, Tuple, Dict, List, Optional
 import chex
+from datetime import datetime
 
 # Enable logging
 log = logging.getLogger("ValueIterationRunner")
@@ -25,8 +26,9 @@ class ValueIterationRunner:
         max_batch_size: int,
         epsilon: float,
         gamma: float,
-        checkpoint_frequency: int,
-        resume_from_checkpoint: Union[bool, str],
+        output_directory: Optional[Union[str, Path]] = None,
+        checkpoint_frequency: int = 0,
+        resume_from_checkpoint: Union[bool, str] = False,
     ):
         """Base class for running value iteration
 
@@ -34,6 +36,7 @@ class ValueIterationRunner:
             max_batch_size: Maximum number of states to update in parallel using vmap, will depend on GPU memory
             epsilon: Convergence criterion for value iteration
             gamma: Discount factor
+            output_directory: Directory to save output to, if None, will create a new directory
             checkpoint_frequency: Frequency with which to save checkpoints, 0 for no checkpoints
             resume_from_checkpoint: If False, start from scratch; if filename, resume from checkpoint
 
@@ -41,11 +44,20 @@ class ValueIterationRunner:
         self.max_batch_size = max_batch_size
         self.epsilon = epsilon
         self.gamma = gamma
+
+        if output_directory is None:
+            now = datetime.now()
+            date = now.strftime("%Y-%m-%d)")
+            time = now.strftime("%H-%M-%S")
+            self.output_directory = Path(f"vi_output/{date}/{time}").absolute()
+        else:
+            self.output_directory = Path(output_directory).absolute()
+
         self.checkpoint_frequency = checkpoint_frequency
 
         self.checkpoint_frequency = checkpoint_frequency
         if self.checkpoint_frequency > 0:
-            self.cp_path = Path("checkpoints_op/")
+            self.cp_path = self.output_directory / "checkpoints"
             self.cp_path.mkdir(parents=True, exist_ok=True)
 
         self.resume_from_checkpoint = resume_from_checkpoint
@@ -193,7 +205,7 @@ class ValueIterationRunner:
                     i % self.checkpoint_frequency == 0
                 ):
                     values_df = pd.DataFrame(V, index=self.state_tuples, columns=["V"])
-                    values_df.to_csv(Path(self.cp_path / f"values_{i}.csv"))
+                    values_df.to_csv(self.cp_path / f"values_{i}.csv")
 
                 self.V_old = V
 
@@ -205,16 +217,18 @@ class ValueIterationRunner:
         if save_final_values:
             log.info("Saving final values")
             values_df = pd.DataFrame(V, index=self.state_tuples, columns=["V"])
-            values_df.to_csv(f"values_{i}.csv")
+            values_df.to_csv(self.output_directory / f"values_{i}.csv")
             log.info("Final values saved")
-            to_return["V"] = values_df
+            to_return[f"V_{i}"] = values_df
 
         if save_policy:
             log.info("Extracting and saving policy")
 
             best_order_actions_df = self.get_policy(V)
 
-            best_order_actions_df.to_csv("best_order_actions.csv")
+            best_order_actions_df.to_csv(
+                self.output_directory / "best_order_actions.csv"
+            )
             log.info("Policy saved")
             to_return["policy"] = best_order_actions_df
 
@@ -359,7 +373,7 @@ class ValueIterationRunner:
         log.warning(
             "Changes to properties of the class after setup will not necessarily be reflected in the output and may lead to errors. To run an experiment with different settings, create a new value iteration runner"
         )
-        log.info(f"Output file directory: {Path.cwd()}")
+        log.info(f"Output file directory: {self.output_directory}")
         log.info(f"N states = {self.output_info['set_sizes']['N_states']}")
         log.info(f"N actions = {self.output_info['set_sizes']['N_actions']}")
         log.info(

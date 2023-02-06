@@ -11,8 +11,9 @@ from omegaconf import OmegaConf
 from pathlib import Path
 from jax import tree_util
 import numpyro
-from typing import Union, List, Tuple, Dict
+from typing import Union, List, Tuple, Dict, Optional
 import chex
+import datetime
 
 # Enable logging
 log = logging.getLogger("ValueIterationRunner")
@@ -40,6 +41,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         max_batch_size: int,
         epsilon: float,
         gamma: float = 0.95,
+        output_directory: Optional[Union[str, Path]] = None,
         checkpoint_frequency: int = 1,
         resume_from_checkpoint: Union[bool, str] = False,
         periodic_convergence_check: bool = True,
@@ -63,6 +65,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
             max_batch_size: Maximum number of states to update in parallel using vmap, will depend on GPU memory
             epsilon: Convergence criterion for value iteration
             gamma: Discount factor
+            output_directory: Directory to save output to, if None, will create a new directory
             checkpoint_frequency: Frequency with which to save checkpoints, 0 for no checkpoints
             resume_from_checkpoint: If False, start from scratch; if filename, resume from checkpoint
             periodic_convergence_check: If True, use periodic convergence check, otherwise test for convergence of values themselves
@@ -107,9 +110,19 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         self.epsilon = epsilon
         self.gamma = gamma
 
+        if output_directory is None:
+            now = datetime.now()
+            date = now.strftime("%Y-%m-%d)")
+            time = now.strftime("%H-%M-%S")
+            self.output_directory = Path(f"vi_output/{date}/{time}").absolute()
+        else:
+            self.output_directory = Path(output_directory).absolute()
+
+        self.checkpoint_frequency = checkpoint_frequency
+
         self.checkpoint_frequency = checkpoint_frequency
         if self.checkpoint_frequency > 0:
-            self.cp_path = Path("checkpoints_op/")
+            self.cp_path = self.output_directory / "checkpoints"
             self.cp_path.mkdir(parents=True, exist_ok=True)
 
         self.resume_from_checkpoint = resume_from_checkpoint

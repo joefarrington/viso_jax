@@ -7,8 +7,9 @@ import logging
 from viso_jax.value_iteration.base_vi_runner import ValueIterationRunner
 from pathlib import Path
 from jax import tree_util
-from typing import Union, Dict, Tuple, List
+from typing import Union, Dict, Tuple, List, Optional
 import chex
+from datetime import datetime
 
 # Enable logging
 log = logging.getLogger("ValueIterationRunner")
@@ -29,6 +30,7 @@ class HendrixPerishableOneProductVIR(ValueIterationRunner):
         max_batch_size: int,
         epsilon: float,
         gamma: float = 1,
+        output_directory: Optional[Union[str, Path]] = None,
         checkpoint_frequency: int = 0,
         resume_from_checkpoint: Union[bool, str] = False,
     ):
@@ -44,6 +46,7 @@ class HendrixPerishableOneProductVIR(ValueIterationRunner):
             max_batch_size: Maximum number of states to update in parallel using vmap, will depend on GPU memory
             epsilon: Convergence criterion for value iteration
             gamma: Discount factor
+            output_directory: Directory to save output to, if None, will create a new directory
             checkpoint_frequency: Frequency with which to save checkpoints, 0 for no checkpoints
             resume_from_checkpoint: If False, start from scratch; if filename, resume from checkpoint
 
@@ -61,9 +64,17 @@ class HendrixPerishableOneProductVIR(ValueIterationRunner):
         self.epsilon = epsilon
         self.gamma = gamma
 
+        if output_directory is None:
+            now = datetime.now()
+            date = now.strftime("%Y-%m-%d)")
+            time = now.strftime("%H-%M-%S")
+            self.output_directory = Path(f"vi_output/{date}/{time}").absolute()
+        else:
+            self.output_directory = Path(output_directory).absolute()
+
         self.checkpoint_frequency = checkpoint_frequency
         if self.checkpoint_frequency > 0:
-            self.cp_path = Path("checkpoints/")
+            self.cp_path = self.output_directory / "checkpoints"
             self.cp_path.mkdir(parents=True, exist_ok=True)
 
         self.resume_from_checkpoint = resume_from_checkpoint

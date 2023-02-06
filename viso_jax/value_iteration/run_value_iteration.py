@@ -20,9 +20,9 @@ def main(cfg: DictConfig) -> None:
     if cfg.jax_settings.double_precision:
         jax_config.update("jax_enable_x64", True)
 
-    VIR = hydra.utils.instantiate(
-        cfg.vi_runner,
-    )
+    output_dir = hydra.core.hydra_config.HydraConfig.get()["runtime"]["output_dir"]
+    print(output_dir)
+    VIR = hydra.utils.instantiate(cfg.vi_runner, output_directory=output_dir)
     vi_output = VIR.run_value_iteration(**cfg.run_settings)
 
     vi_complete_time = datetime.now()
