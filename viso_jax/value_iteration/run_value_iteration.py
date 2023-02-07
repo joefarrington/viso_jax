@@ -49,6 +49,8 @@ def main(cfg: DictConfig) -> None:
         # Simulation doesn't need to be in double precision
         jax_config.update("jax_enable_x64", False)
 
+        log.info("Running evaluation rollouts for policy found using value iteration")
+
         # Run evaluation for best policy, including computing kpis
         policy = hydra.utils.instantiate(
             cfg.policy, policy_params_df=vi_output["policy"]
