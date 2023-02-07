@@ -212,7 +212,7 @@ class ValueIterationRunner:
         to_return = {}
 
         # Put final values into pd.DataFrame to return
-        values_df = pd.DataFrame(V, index=self.state_tuples, columns=["V"])
+        values_df = pd.DataFrame(np.array(V), index=self.state_tuples, columns=["V"])
         to_return[f"V"] = values_df
 
         # If extract_policy is True, extract policy with one-step ahead search
@@ -246,7 +246,7 @@ class ValueIterationRunner:
         best_action_idxs = self._unpad(best_action_idxs_padded.reshape(-1), self.n_pad)
         best_order_actions = jnp.take(self.actions, best_action_idxs, axis=0)
         best_order_actions_df = pd.DataFrame(
-            best_order_actions,
+            np.array(best_order_actions),
             index=self.state_tuples,
             columns=self.action_labels,
         )
