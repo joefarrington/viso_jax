@@ -1,4 +1,4 @@
-import pathlib
+from pathlib import Path
 
 scenario_config_search_paths = [
     "viso_jax/scenarios/de_moor_perishable/conf",
@@ -9,6 +9,6 @@ scenario_config_search_paths = [
 
 
 def get_absolute_config_paths():
-    tests_dir = pathlib.Path(__file__).parent.resolve()
+    tests_dir = Path(__file__).parent.resolve()
     abs_path_viso_jax = tests_dir.absolute().parent
     return [f"{abs_path_viso_jax / scen}" for scen in scenario_config_search_paths]
