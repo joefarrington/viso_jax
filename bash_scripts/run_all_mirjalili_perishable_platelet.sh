@@ -12,9 +12,9 @@ cd ../viso_jax/value_iteration
 
 for m in ${max_useful_lives[@]}
 do  
-    if [ $m -gt 3 ]
+    if [ $m -gt 5 ]
     then
-        echo "Skipping m=${m}" # m=5 takes a long time, m=8 we can't do so skip for today
+        echo "Skipping m=${m}" # We can't run VI when m=8, so skip it
         continue
     fi
     for exp in ${experiments[@]}
