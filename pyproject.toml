@@ -9,9 +9,10 @@ packages = [{include = "viso_jax"}]
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
 hydra-core = "^1.2.0"
-numpyro = "^0.10.1"
+numpyro = "^0.10.1, <0.11.0"
 gymnax = "^0.0.5"
 optuna = "^3.0.5"
+jedi = "^0.18.2"
 
 [tool.poetry.group.on_colab.dependencies]
 numpy = "^1.23.3"
