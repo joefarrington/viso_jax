@@ -263,7 +263,7 @@ stevedore = ">=2.0.1"
 name = "cloudpickle"
 version = "2.2.0"
 description = "Extended pickling support for Python objects"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -385,7 +385,7 @@ python-versions = ">=3.7"
 name = "decorator"
 version = "5.1.1"
 description = "Decorators for Humans"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
 
@@ -528,7 +528,7 @@ python-versions = ">=2.7, !=3.0, !=3.1, !=3.2, !=3.3, !=3.4, <4"
 name = "gast"
 version = "0.5.3"
 description = "Python AST that abstracts the underlying Python version"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
@@ -772,7 +772,7 @@ reference = "jaxlib"
 name = "jedi"
 version = "0.18.2"
 description = "An autocompletion tool for Python that can be used for text editors."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -1382,7 +1382,7 @@ python-versions = ">=3.7"
 name = "pandas"
 version = "1.5.2"
 description = "Powerful data structures for data analysis, time series, and statistics"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.8"
 
@@ -1409,7 +1409,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 name = "parso"
 version = "0.8.3"
 description = "A Python Parser"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -1488,7 +1488,7 @@ test = ["appdirs (==1.4.4)", "covdefaults (>=2.2.2)", "pytest (>=7.2)", "pytest-
 name = "plotly"
 version = "5.11.0"
 description = "An open-source, interactive data visualization library for Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -1689,7 +1689,7 @@ python-versions = ">=3.5"
 name = "pytz"
 version = "2022.7"
 description = "World timezone definitions, modern and historical"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -1815,7 +1815,7 @@ numpy = ">=1.17.3,<1.25.0"
 name = "seaborn"
 version = "0.12.2"
 description = "Statistical data visualization"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -1960,7 +1960,7 @@ pbr = ">=2.0.0,<2.1.0 || >2.1.0"
 name = "tenacity"
 version = "8.1.0"
 description = "Retry code until it succeeds"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -1971,7 +1971,7 @@ doc = ["reno", "sphinx", "tornado (>=4.5)"]
 name = "tensorflow-probability"
 version = "0.19.0"
 description = "Probabilistic modeling and statistical inference in TensorFlow"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -2163,7 +2163,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "9f6ba739f866ad17d9e8329e11dac7f3cb713ff8405c45e698298e330f370666"
+content-hash = "65be279a8dd91d87fa1ae0d273878953607cf2b4245ebf5e88594554b31dd359"
 
 [metadata.files]
 absl-py = [

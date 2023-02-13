@@ -12,6 +12,7 @@ hydra-core = "^1.2.0"
 numpyro = "^0.10.1"
 gymnax = "^0.0.5"
 optuna = "^3.0.5"
+jedi = "^0.18.2"
 
 [tool.poetry.group.on_colab.dependencies]
 numpy = "^1.23.3"
