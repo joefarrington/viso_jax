@@ -1,8 +1,41 @@
 # viso_jax
 
-GPU-accelerated value iteration and simulation optimization for perishable inventory control using JAX
+GPU-accelerated value iteration and simulation for perishable inventory control using JAX
 
 ## Introduction
+
+This repository provides the code to support the paper <i>Going faster to see further: GPU-accelerated value iteration and simulation for perishable inventory control using JAX</i> by Farrington et al (2023) TODO: link to preprint. 
+
+The paper considers three perishable inventory management scenarios from recent work and ...
+
+TODO: Note what the different sections are below ...
+
+
+## Scenarios
+
+### Scenario A
+
+Based on <i>"Reward shaping to improve the performance of deep reinforcement learning in perishable inventory management"</i> by [De Moor et al (2022)](https://doi.org/10.1016/j.ejor.2021.10.045)
+
+Referred to as `de_moor_perishable` in the directory structure and configuration files. 
+
+### Scenario B
+
+Based on the two product scenarios in <i>"On computing optimal policies in perishable inventory control using value iteration"</i> by [Hendrix et al (2019)](https://doi.org/10.1002/cmm4.1027)
+
+Additional experimental settings are taken from [Ortega et al (2019)](https://doi.org/10.1007/s11227-018-2692-z).
+
+Referred to as `hendrix_perishable_substitution_two_product` in the directory structure and configuration files. 
+
+### Scenario C
+
+Adapted from the scenario in Chapter 6 of <i>"Data-driven modelling and control of hospital blood inventory"</i> by [Mirjalili (2022)](https://tspace.library.utoronto.ca/bitstream/1807/124976/1/Mirjalili_Mahdi_202211_PhD_thesis.pdf)
+
+Referred to as `mirjalili_perishable_platelets` in the directory structure and configuration files. 
+
+### Additional scenarios
+
+The single product scenario described by [Hendrix et al (2019)](https://doi.org/10.1002/cmm4.1027) is included in the repository as `hendrix_single_product`. 
 
 ## Installation
 
@@ -10,7 +43,7 @@ To use JAX with Nvidia GPU-acceleration, you must first install CUDA and CuDNN. 
 
 Python dependencies are listed in `pyproject.toml`. We use [poetry](https://python-poetry.org/docs/) for dependency management.
 
-viso_jax and its Python dependencies can be installed using the code snippet below. This snippet assumes that you have [poetry installed](https://python-poetry.org/docs/#installation). If this snippet not run in a virtual environment, poetry will create a new virtual environment before installing the dependencies.
+viso_jax and its Python dependencies can be installed using the code snippet below. This snippet assumes that you have [poetry installed](https://python-poetry.org/docs/#installation). If this snippet is not run in a virtual environment, poetry will create a new virtual environment before installing the dependencies.
 
 ```bash
 git clone https://github.com/joefarrington/viso_jax.git
@@ -24,29 +57,15 @@ Once installation is complete, you can test that JAX recognises an accelerator (
 poetry run pytest -m "jax"
 ```
 
-## Scenarios
+## Reproducing experiments with Colab
 
-### de_moor_perishable
+TODO: Link to Colab notebook
 
-Adapted from <i>"Reward shaping to improve the performance of deep reinforcement learning in perishable inventory management"</i> by [De Moor et al (2022)](https://doi.org/10.1016/j.ejor.2021.10.045)
+The Colab notebook also includes an Adanced section with brief interactive tutorials showing have to run experiments with different settings using the command line TODO: ...
 
-### hendrix_perishable_one_product
+## Running experiments using the command line
 
-Adapted from the single product scenarios in <i>"On computing optimal policies in perishable inventory control using value iteration"</i> by [Hendrix et al (2019)](https://doi.org/10.1002/cmm4.1027)
-
-### hendrix_perishable_substitution_two_product
-
-Adapted from the two product scenarios in <i>"On computing optimal policies in perishable inventory control using value iteration"</i> by [Hendrix et al (2019)](https://doi.org/10.1002/cmm4.1027)
-
-Additional experimental settings are taken from [Ortega et al (2019)](https://doi.org/10.1007/s11227-018-2692-z).
-
-### mirjalili_perishable_platelet
-
-Adapted from the scenario in Chapter 6 of <i>"Data-driven modelling and control of hospital blood inventory"</i> by [Mirjalili (2022)](https://tspace.library.utoronto.ca/bitstream/1807/124976/1/Mirjalili_Mahdi_202211_PhD_thesis.pdf)
-
-## Running experiments
-
-## Colab examples
+We used the shell scripts in the directory `bash_scripts` to run our experiments. There is one script corresponding to each results table in the paper. 
 
 ## Tests
 
@@ -64,7 +83,7 @@ The [Awesome JAX](https://github.com/n2cholas/awesome-jax) GitHub repository con
 
 #### Value iteration
 
-Thomas J Sargent and John Stachurski provide an [interactive tutorial](https://notes.quantecon.org/submission/622ed4daf57192000f918c61) implementing value iteration in JAX for an economics problem and comparing the speed of two NumPy-based approaches with GPU-accelerated JAX.
+Thomas J Sargent and John Stachurski provide an [interactive tutorial](https://notes.quantecon.org/submission/622ed4daf57192000f918c61) implementing value iteration in JAX for an economics problem and compard the speed of two NumPy-based approaches with GPU-accelerated JAX.
 
 ### Hydra
 

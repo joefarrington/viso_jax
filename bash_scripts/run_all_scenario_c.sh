@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-scenario=mirjalili_perishable_platelet
+scenario_name=mirjalili_perishable_platelet
 max_useful_lives=( 3 5 8)
 experiments=( 1 2 )
 date_now=$(date +"%Y-%m-%d")
 time_now=$(date +"%H-%M-%S")
 
-echo "Running all experiments for scenario ${scenario} at ${date_now} ${time_now}"
+echo "Running all experiments for Scenario C at ${date_now} ${time_now}"
 
 cd ../viso_jax/value_iteration
 
@@ -20,8 +20,8 @@ do
     for exp in ${experiments[@]}
     do  
         echo "Running value iteration for m=${m}, exp=${exp}"
-        python run_value_iteration.py +experiment=${scenario}/m${m}/exp${exp} \
-        hydra.run.dir=./outputs/run_all_${scenario}/${date_now}/${time_now}/m${m}/exp${exp}
+        python run_value_iteration.py +experiment=${scenario_name}/m${m}/exp${exp} \
+        hydra.run.dir=./outputs/run_all_scenario_c/${date_now}/${time_now}/m${m}/exp${exp}
     done
 done
 
@@ -32,8 +32,8 @@ do
     for exp in ${experiments[@]}
     do  
         echo "Running simulation optimization for m=${m}, exp=${exp}"
-        python run_optuna_simopt.py +experiment=${scenario}/m${m}/exp${exp} \
-        hydra.run.dir=./outputs/run_all_${scenario}/${date_now}/${time_now}/m${m}/exp${exp}
+        python run_optuna_simopt.py +experiment=${scenario_name}/m${m}/exp${exp} \
+        hydra.run.dir=./outputs/run_all_scenario_c/${date_now}/${time_now}/m${m}/exp${exp}
     done
 done
 
