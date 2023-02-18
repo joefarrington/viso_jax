@@ -128,10 +128,6 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         self.resume_from_checkpoint = resume_from_checkpoint
 
         self.periodic_convergence_check = periodic_convergence_check
-        if periodic_convergence_check:
-            assert (
-                self.checkpoint_frequency == 1
-            ), "Checkpoint frequency must be 1 to use periodic convergence check"
 
         self.weekdays = {
             0: "monday",
@@ -144,6 +140,18 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         }
 
         self._setup()
+
+        if periodic_convergence_check:
+            assert (
+                self.checkpoint_frequency == 1
+            ), "Checkpoint frequency must be 1 to use periodic convergence check"
+
+            # Save an initial checkpoint of V at iteration 0 for use by periodic conv check
+            V_0 = self.calculate_initial_values()
+            values_df = pd.DataFrame(
+                np.array(V_0), index=self.state_tuples, columns=["V"]
+            )
+            values_df.to_csv(self.cp_path / f"values_0.csv")
 
     def generate_states(self) -> Tuple[List[Tuple], Dict[str, int]]:
         """Returns a tuple consisting of a list of all possible states as tuples and a
@@ -368,7 +376,7 @@ class MirjaliliPerishablePlateletVIR(ValueIterationRunner):
         """Periodic convergence check to determine whether to stop value iteration. Stops when the (undiscounted) change in
         a value over a period is the same for every state. The periodicity is 7 - the days of the week"""
         period = len(self.weekdays.keys())
-        if iteration < (period + 1):
+        if iteration < (period):
             log.info(
                 f"Iteration {iteration} complete, but fewer iterations than periodicity so cannot check for convergence yet"
             )
