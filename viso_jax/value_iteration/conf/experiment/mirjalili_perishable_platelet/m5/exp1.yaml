@@ -8,6 +8,6 @@ defaults:
 exp_name: mirjalili_perishable_platelet/m5/exp1
 
 vi_runner:
-  max_batch_size: 100
+  max_batch_size: 90
 jax_settings:
-  double_precision: False
+  double_precision: True
