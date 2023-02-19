@@ -9,3 +9,4 @@ exp_name: hendrix_perishable_substitution_two_product/m2/ortega_P4
 
 run_settings:
   min_iter: 100
+  max_iter: 100
