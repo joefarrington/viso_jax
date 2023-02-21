@@ -9,7 +9,7 @@ from pathlib import Path
 from jax import tree_util
 from typing import Union, Dict, Tuple, List, Optional
 import chex
-import datetime
+from datetime import datetime
 
 # Enable logging
 log = logging.getLogger("ValueIterationRunner")

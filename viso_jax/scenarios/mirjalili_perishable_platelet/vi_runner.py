@@ -13,7 +13,7 @@ from jax import tree_util
 import numpyro
 from typing import Union, List, Tuple, Dict, Optional
 import chex
-import datetime
+from datetime import datetime
 
 # Enable logging
 log = logging.getLogger("ValueIterationRunner")

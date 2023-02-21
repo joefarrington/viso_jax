@@ -10,7 +10,7 @@ from jax import tree_util
 from scipy import stats
 from typing import Union, Tuple, Dict, List, Optional
 import chex
-import datetime
+from datetime import datetime
 
 # Enable logging
 log = logging.getLogger("ValueIterationRunner")
