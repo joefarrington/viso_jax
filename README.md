@@ -67,18 +67,18 @@ The Colab notebook also includes an Advanced section with brief interactive tuto
 We used the shell scripts in the directory `bash_scripts` to run our experiments. There is one script corresponding to each results table in the paper. 
 
 ### Scenario A
-* Table 3: run_all_scenario_a.sh
+* Table 3: `run_all_scenario_a.sh`
 
 ### Scenario B
-* Table 4: run_all_scenario_b_hendrix_settings.sh
-* Table 5: run_all_scenario_b_ortega_settings.sh
+* Table 4: `run_all_scenario_b_hendrix_settings.sh`
+* Table 5: `run_all_scenario_b_ortega_settings.sh`
 
 ### Scenario C
-* Table 6: run_all_scenario_c.sh
+* Table 6: `run_all_scenario_c.sh`
 
 By default, the value iteration experiments will save results in `viso_jax/value_iteration/outputs/{name of bash script}/{date}/{time}/m{x}/{exp name}` and the simulation optimization experiments will save results in `viso_jax/simopt/outputs/{name of bash script}/{date}/{time}/m{x}/{exp name}`. Alternative output paths can be specified in the bash script by changing the command line argument `hydra.run.dir`passed to the scripts `run_value_iteration.py` and `run_optuna_simopt.py` respectively. 
 
-Details from the experiments used to populate the results table are saved in a yaml file, `output_info.yaml`. By default, all experiments save the hydra configuration details and a log file. Value iteration experiments may save checkpoints of the value function, and by default will save the final policy and the final estimate of the value function (`poilcy.csv`, `V.csv`). Simulation optimization experiments save a record of the trials run by Optuna (`trials.csv`) and the row corresponding to the best trial (`best_trial.csv`) by default.  
+Details from the experiments used to populate the results table are saved in a yaml file, `output_info.yaml`. This file also includes the KPI information used to populate the results tables in the appendices. By default, all experiments save the hydra configuration details and a log file. Value iteration experiments may save checkpoints of the value function, and by default will save the final policy and the final estimate of the value function (`poilcy.csv`, `V.csv`). Simulation optimization experiments save a record of the trials run by Optuna (`trials.csv`) and the row corresponding to the best trial (`best_trial.csv`) by default.  
 
 
 ## Tests
