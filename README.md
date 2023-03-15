@@ -58,9 +58,9 @@ poetry run pytest -m "jax"
 
 ## Reproducing experiments with Colab
 
-The Colab notebook includes a form corresponding to the results table in Section 4, 5 and 6 of the paper and can be used to reproduce the value iteration and simulation optimization experiments on a cloud-based GPU. 
+The Colab notebook includes a form corresponding to each of the results tables in Section 4, 5 and 6 of the paper. These can be used to reproduce the value iteration and simulation optimization experiments on a cloud-based GPU. 
 
-The Colab notebook also includes an Advanced section with brief interactive tutorials showing how to run experiments with different settings using the command line. 
+The Colab notebook also includes an Advanced section with brief interactive tutorials demonstrating how to run experiments with different settings using the command line. 
 
 ## Running experiments using the command line
 
