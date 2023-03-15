@@ -6,9 +6,9 @@ GPU-accelerated value iteration and simulation for perishable inventory control 
 
 This repository provides the code to support the paper <i>Going faster to see further: GPU-accelerated value iteration and simulation for perishable inventory control using JAX</i> by Farrington et al (2023) TODO: link to preprint. 
 
-The paper considers three perishable inventory management scenarios from recent work and demonstrates how that it is possible to run value iteration to find the optimal policy for problem sizes that were previously considered infeasible or intractable using the Python library JAX to take advantage of the parellel processing capabilities of modern GPUs. 
+The paper considers three perishable inventory management scenarios from recent studies and demonstrates that it is possible to run value iteration to find the optimal policy for problems that were previously considered infeasible or intractable using the Python library JAX to take advantage of the parellel processing capabilities of modern GPUs. 
 
-We provide a Colab notebook that can be used to reproduce the experiments on a free cloud-based GPU (subject to usage limits). 
+We provide a Google Colab notebook that can be used to reproduce the experiments on a free cloud-based GPU. 
 
 ## Scenarios
 
