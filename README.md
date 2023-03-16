@@ -47,7 +47,7 @@ viso_jax and its Python dependencies can be installed using the code snippet bel
 ```bash
 git clone https://github.com/joefarrington/viso_jax.git
 cd viso_jax
-poetry install viso_jax
+poetry install
 ```
 
 Once installation is complete, you can test that JAX recognises an accelerator (GPU or TPU) by running the following snippet:
