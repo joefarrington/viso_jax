@@ -62,6 +62,8 @@ The Colab notebook includes a form corresponding to Scenarios A, B and C in the 
 
 The Colab notebook also includes an Advanced section with brief interactive tutorials demonstrating how to run experiments with different settings using the command line. 
 
+The notebook was last tested on 2023-03-17. Changes to the Colab virtual machine may affect performance and/or lead to incompatibilities. Please raise an issue if you encounter problems when using the notebook. The [Colab release notes](https://colab.research.google.com/notebooks/relnotes.ipynb) will detail any changes that have been made to the Colab service since the notebook was last tested. 
+
 ## Running experiments using the command line
 
 We used the shell scripts in the directory `bash_scripts` to run our experiments. There is one script corresponding to each results table in the paper. 
