@@ -8,7 +8,7 @@ This repository provides the code to support the paper <i>Going faster to see fu
 
 The paper considers three perishable inventory management scenarios from recent studies and demonstrates that it is possible to run value iteration to find the optimal policy for problems that were previously considered infeasible or intractable using the Python library JAX to take advantage of the parellel processing capabilities of modern GPUs. 
 
-We provide a Google Colab notebook that can be used to reproduce the experiments on a free cloud-based GPU in the `notebooks` directory. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/joefarrington/viso_jax/blob/main/notebooks/reproduce_viso_jax_experiments.ipynb)
+We provide a Google Colab notebook that can be used to reproduce the experiments on a free cloud-based GPU in the `notebooks` directory [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/joefarrington/viso_jax/blob/main/notebooks/reproduce_viso_jax_experiments.ipynb).
 
 ## Scenarios
 
