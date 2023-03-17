@@ -58,7 +58,7 @@ poetry run pytest -m "jax"
 
 ## Reproducing experiments with Colab
 
-[(https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/joefarrington/viso_jax/blob/master/notebooks/reproduce_viso_jax_experiments.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/joefarrington/viso_jax/blob/master/notebooks/reproduce_viso_jax_experiments.ipynb)
 
 The Colab notebook `reproduce_viso_jax_experiments.ipynb` in the `notebooks` directory includes a form corresponding to Scenarios A, B and C in the paper. These can be used to reproduce the value iteration and simulation optimization experiments on a cloud-based GPU. 
 
