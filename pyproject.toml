@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "viso-jax"
 version = "0.1.0"
-description = "GPU-accelerated value iteration and simulation optimization for perishable inventory control using JAX"
+description = "GPU-accelerated value iteration and simulation for perishable inventory control using JAX"
 authors = ["Joe Farrington <farrington.joe@gmail.com>"]
 readme = "README.md"
 packages = [{include = "viso_jax"}]
