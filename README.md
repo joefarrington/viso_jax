@@ -1,5 +1,7 @@
 # viso_jax
 
+[![DOI](https://zenodo.org/badge/585950157.svg)](https://zenodo.org/badge/latestdoi/585950157)
+
 GPU-accelerated value iteration and simulation for perishable inventory control using JAX
 
 ## Introduction
