@@ -4,7 +4,6 @@ import jax
 import jax.numpy as jnp
 import itertools
 import logging
-import viso_jax
 from viso_jax.value_iteration.base_vi_runner import (
     ValueIterationRunner,
 )
@@ -12,48 +11,68 @@ from omegaconf import OmegaConf
 from pathlib import Path
 from jax import tree_util
 import numpyro
-
+from typing import Union, List, Tuple, Dict, Optional
+import chex
+from datetime import datetime
 
 # Enable logging
 log = logging.getLogger("ValueIterationRunner")
 
 # For now, assume all arrives fresh and 3 periods of useful life
-# Note that, unlike the other examples, oldest stock is on the LHS
-# of the vector for consistency with prev stochastic programming and RL
-# work.
+
+# NOTE: Unlike earlier work with this scenario, freshest stock now on the LHS
+# for consistency with other scenarios in viso_jax repo
 
 
-class OnePerishablePeriodicDemandVIR(ValueIterationRunner):
+class RajendranPerishablePlateletVIR(ValueIterationRunner):
     def __init__(
         self,
-        min_demand,
-        max_demand,
-        weekday_demand_params,  # [M, T, W, T, F, S, S]
-        max_useful_life,
-        lead_time,
-        max_order_quantity,
-        variable_order_cost,
-        fixed_order_cost,
-        shortage_cost,
-        wastage_cost,
-        holding_cost,
-        batch_size,
-        epsilon,
-        gamma=1,
-        checkpoint_frequency=1,  # Zero for no checkpoints, otherwise every x iterations
-        resume_from_checkpoint=False,  # Set to checkpoint file path to restore
-        use_pmap=False,
+        max_demand: int,
+        weekday_demand_poisson_mean: List[float],  # [M, T, W, T, F, S, S]
+        max_useful_life: int,
+        max_order_quantity: int,
+        variable_order_cost: float,
+        fixed_order_cost: float,
+        shortage_cost: float,
+        wastage_cost: float,
+        holding_cost: float,
+        max_batch_size: int,
+        epsilon: float,
+        gamma=1.0,
+        output_directory: Optional[Union[str, Path]] = None,
+        checkpoint_frequency: int = 1,
+        resume_from_checkpoint: Union[bool, str] = False,
+        periodic_convergence_check: bool = True,
     ):
-        self.min_demand = min_demand
+        """Class to run value iteration for rajendran_perishable_platelet scenario
+
+        Args:
+            max_demand: int,
+            weekday_demand_negbin_delta: mean of the Poisson demand districution, one for each weekday in order [M, T, W, T, F, S, S]
+            max_useful_life: maximum useful life of product, m >= 1
+            max_order_quantity: maximum order quantity
+            variable_order_cost: cost per unit ordered
+            fixed_order_cost: cost incurred when order > 0
+            shortage_cost: cost per unit of demand not met
+            wastage_cost: cost per unit of product that expires before use
+            holding_cost: cost per unit of product in stock at the end of the day
+            max_batch_size: Maximum number of states to update in parallel using vmap, will depend on GPU memory
+            epsilon: Convergence criterion for value iteration
+            gamma: Discount factor
+            output_directory: Directory to save output to, if None, will create a new directory
+            checkpoint_frequency: Frequency with which to save checkpoints, 0 for no checkpoints
+            resume_from_checkpoint: If False, start from scratch; if filename, resume from checkpoint
+            periodic_convergence_check: If True, use periodic convergence check, otherwise test for convergence of values themselves
+
+        """
         self.max_demand = max_demand
         # Roll weekday demands - e.g. in transition for Monday state we're interested in Tuesday's demand
-        self.weekday_demand_params = {
-            k: jnp.array(np.roll(v, -1)) for k, v in weekday_demand_params.items()
+        self.weekday_demand_poisson_mean = {
+            k: jnp.array(np.roll(v, -1)) for k, v in weekday_demand_poisson_mean.items()
         }
         self.max_useful_life = max_useful_life
-        self.lead_time = lead_time
         self.max_order_quantity = max_order_quantity
-        self.costs = jnp.array(
+        self.cost_components = jnp.array(
             [
                 variable_order_cost,
                 fixed_order_cost,
@@ -62,9 +81,28 @@ class OnePerishablePeriodicDemandVIR(ValueIterationRunner):
                 holding_cost,
             ]
         )
-        self.batch_size = batch_size
+        self.max_batch_size = max_batch_size
         self.epsilon = epsilon
         self.gamma = gamma
+
+        if output_directory is None:
+            now = datetime.now()
+            date = now.strftime("%Y-%m-%d)")
+            time = now.strftime("%H-%M-%S")
+            self.output_directory = Path(f"vi_output/{date}/{time}").absolute()
+        else:
+            self.output_directory = Path(output_directory).absolute()
+
+        self.checkpoint_frequency = checkpoint_frequency
+
+        self.checkpoint_frequency = checkpoint_frequency
+        if self.checkpoint_frequency > 0:
+            self.cp_path = self.output_directory / "checkpoints"
+            self.cp_path.mkdir(parents=True, exist_ok=True)
+
+        self.resume_from_checkpoint = resume_from_checkpoint
+
+        self.periodic_convergence_check = periodic_convergence_check
 
         self.weekdays = {
             0: "monday",
@@ -76,21 +114,27 @@ class OnePerishablePeriodicDemandVIR(ValueIterationRunner):
             6: "sunday",
         }
 
-        self.checkpoint_frequency = checkpoint_frequency
-        if self.checkpoint_frequency > 0:
-            self.cp_path = Path("checkpoints_op/")
-            self.cp_path.mkdir(parents=True, exist_ok=True)
+        self._setup()
 
-        self.resume_from_checkpoint = resume_from_checkpoint
+        if periodic_convergence_check:
+            assert (
+                self.checkpoint_frequency == 1
+            ), "Checkpoint frequency must be 1 to use periodic convergence check"
 
-        self.use_pmap = use_pmap
+            # Save an initial checkpoint of V at iteration 0 for use by periodic conv check
+            V_0 = self.calculate_initial_values()
+            values_df = pd.DataFrame(
+                np.array(V_0), index=self.state_tuples, columns=["V"]
+            )
+            values_df.to_csv(self.cp_path / f"values_0.csv")
 
-        self.setup()
-        pass
+    def generate_states(self) -> Tuple[List[Tuple], Dict[str, int]]:
+        """Returns a tuple consisting of a list of all possible states as tuples and a
+        dictionary that maps descriptive names of the components of the state to indices
+        that can be used to extract them from an individual state"""
 
-    def generate_states(self):
         possible_orders = range(0, self.max_order_quantity + 1)
-        product_arg = [possible_orders] * (self.max_useful_life + self.lead_time - 1)
+        product_arg = [possible_orders] * (self.max_useful_life - 1)
         stock_states = list(itertools.product(*product_arg))
         state_tuples = [
             (w, *stock) for w, stock in (itertools.product(np.arange(7), stock_states))
@@ -104,23 +148,15 @@ class OnePerishablePeriodicDemandVIR(ValueIterationRunner):
             state_component_idx_dict["stock_start"]
             + state_component_idx_dict["stock_len"]
         )
-        state_component_idx_dict["in_transit_start"] = state_component_idx_dict[
-            "stock_stop"
-        ]
-        state_component_idx_dict["in_transit_len"] = self.lead_time
-        state_component_idx_dict["in_transit_stop"] = (
-            state_component_idx_dict["in_transit_start"]
-            + state_component_idx_dict["in_transit_len"]
-        )
-
         return state_tuples, state_component_idx_dict
 
-    def create_state_to_idx_mapping(self):
+    def create_state_to_idx_mapping(self) -> chex.Array:
+        """Returns an array that maps from a state (represented as a tuple) to its index
+        in the state array"""
         state_to_idx = np.zeros(
             (
                 len(self.weekdays.keys()),
-                *[self.max_order_quantity + 1]
-                * (self.max_useful_life + self.lead_time - 1),
+                *[self.max_order_quantity + 1] * (self.max_useful_life - 1),
             )
         )
         for idx, state in enumerate(self.state_tuples):
@@ -128,66 +164,66 @@ class OnePerishablePeriodicDemandVIR(ValueIterationRunner):
         state_to_idx = jnp.array(state_to_idx, dtype=jnp.int32)
         return state_to_idx
 
-    def generate_actions(self):
+    def generate_actions(self) -> Tuple[chex.Array, List[str]]:
+        """Returns a tuple consisting of an array of all possible actions and a
+        list of descriptive names for each action dimension"""
         actions = jnp.arange(0, self.max_order_quantity + 1)
         action_labels = ["order_quantity"]
         return actions, action_labels
 
-    def generate_possible_random_outcomes(self):
-        possible_random_outcomes = jnp.arange(
-            self.min_demand, self.max_demand + 1
-        ).reshape(-1, 1)
+    def generate_possible_random_outcomes(self) -> Tuple[chex.Array, Dict[str, int]]:
+        """Returns a tuple consisting of an array of all possible random outcomes and a dictionary
+        that maps descriptive names of the components of a random outcome to indices that can be
+        used to extract them from an individual random outcome."""
+        possible_random_outcomes = jnp.arange(0, self.max_demand + 1).reshape(-1, 1)
         pro_component_idx_dict = {}
         pro_component_idx_dict["demand"] = 0
 
         return possible_random_outcomes, pro_component_idx_dict
 
-    def deterministic_transition_function(self, state, action, random_outcome):
+    def deterministic_transition_function(
+        self,
+        state: chex.Array,
+        action: Union[int, chex.Array],
+        random_outcome: chex.Array,
+    ) -> Tuple[chex.Array, float]:
+        """Returns the next state and single-step reward for the provided state, action and random combination"""
         demand = random_outcome[self.pro_component_idx_dict["demand"]]
 
-        in_transit = state[
-            self.state_component_idx_dict[
-                "in_transit_start"
-            ] : self.state_component_idx_dict["in_transit_stop"]
-        ]
-        in_transit = jnp.hstack([in_transit, action])
-        units_received = in_transit[0]
-        in_transit = in_transit[1 : 1 + self.state_component_idx_dict["in_transit_len"]]
-
-        opening_stock = jnp.hstack(
+        opening_stock_after_delivery = jnp.hstack(
             [
+                action,
                 state[
                     self.state_component_idx_dict[
                         "stock_start"
                     ] : self.state_component_idx_dict["stock_stop"]
                 ],
-                0,
             ]
-        ) + jnp.array([0, 0, units_received])
+        )
 
-        stock_after_issue = self._issue_oufo(opening_stock, demand)
+        stock_after_issue = self._issue_oufo(opening_stock_after_delivery, demand)
 
         # Compute variables required to calculate the cost
         variable_order = action
         fixed_order = action > 0
         shortage = jnp.where(
-            demand - jnp.sum(opening_stock) > 0, demand - jnp.sum(opening_stock), 0
+            demand - jnp.sum(opening_stock_after_delivery) > 0,
+            demand - jnp.sum(opening_stock_after_delivery),
+            0,
         )
-        expiries = stock_after_issue[0]
-        closing_stock = stock_after_issue[1 : self.max_useful_life]
-
+        expiries = stock_after_issue[-1]
         holding = jnp.sum(closing_stock)
+        closing_stock = stock_after_issue[0 : self.max_useful_life - 1]
+
+        # These components must be in the same order as self.cost_components
+        transition_function_reward_output = jnp.hstack(
+            [variable_order, fixed_order, shortage, expiries, holding]
+        )
 
         # Update the weekday
         next_weekday = (state[self.state_component_idx_dict["weekday"]] + 1) % 7
 
-        next_state = jnp.hstack([next_weekday, closing_stock, in_transit]).astype(
-            jnp.int32
-        )
-        # These components must be in the same order as self.costs
-        transition_function_reward_output = jnp.hstack(
-            [variable_order, fixed_order, shortage, expiries, holding]
-        )
+        next_state = jnp.hstack([next_weekday, closing_stock]).astype(jnp.int32)
 
         single_step_reward = self._calculate_single_step_reward(
             state, action, transition_function_reward_output
@@ -195,21 +231,50 @@ class OnePerishablePeriodicDemandVIR(ValueIterationRunner):
 
         return next_state, single_step_reward
 
-    def get_probabilities(self, state, action, possible_random_outcomes):
+    def get_probabilities(
+        self,
+        state: chex.Array,
+        action: Union[int, chex.Array],
+        possible_random_outcomes: chex.Array,
+    ) -> chex.Array:
+        """Returns an array of the probabilities of each possible random outcome for the provides state-action pair"""
         weekday = state[self.state_component_idx_dict["weekday"]]
         mean_demand = self.weekday_demand_params["mean"][
             weekday
         ]  # Due to roll in __init__(), pulling demand for next day
         return jax.scipy.stats.poisson.pmf(
-            jnp.arange(self.min_demand, self.max_demand + 1), mean_demand
+            jnp.arange(0, self.max_demand + 1), mean_demand
         )
 
-    def calculate_initial_values(self):
+    def calculate_initial_values(self) -> chex.Array:
+        """Returns an array of the initial values for each state"""
         return jnp.zeros(len(self.states))
 
-    def check_converged(self, iteration, min_iter, V, V_old):
+    def check_converged(
+        self, iteration: int, min_iter: int, V: chex.Array, V_old: chex.Array
+    ) -> bool:
+        """Convergence check to determine whether to stop value iteration. We allow the
+        choice of two convergence checks based on the value of
+        self.periodic_convergence_check: the periodic convergence check will generally
+        require fewer iterations, but the standard convergence check can be used if
+        the values are needed"""
+        # By default, we used periodic convergence check
+        # because we're interested in the policy rather than the value function
+        if self.periodic_convergence_check:
+            return self._check_converged_periodic(iteration, min_iter, V, V_old)
+        else:
+            # But we can also check for convergence of value function itself
+            # as in DeMoor case
+            return self._check_converged_v(iteration, min_iter, V, V_old)
+
+    def _check_converged_periodic(
+        self, iteration: int, min_iter: int, V: chex.Array, V_old: chex.Array
+    ) -> bool:
+        """Periodic convergence check to determine whether to stop value iteration. Stops when the (undiscounted) change in
+        a value over a period is the same for every state. The periodicity is 7 - the days of the week
+        """
         period = len(self.weekdays.keys())
-        if iteration < (period + 1):
+        if iteration < (period):
             log.info(
                 f"Iteration {iteration} complete, but fewer iterations than periodicity so cannot check for convergence yet"
             )
@@ -250,31 +315,67 @@ class OnePerishablePeriodicDemandVIR(ValueIterationRunner):
                 log.info(f"Iteration {iteration}, period delta diff: {delta_diff}")
                 return False
 
-    ##### Supporting function for deterministic transition function ####
-    def _issue_oufo(self, opening_stock, demand):
-        _, remaining_stock = jax.lax.scan(self._issue_one_step, demand, opening_stock)
+        def _check_converged_v(
+            self, iteration: int, min_iter: int, V: chex.Array, V_old: chex.Array
+        ) -> bool:
+            """Standard convergence check to determine whether to stop value iteration. Stops when there is
+            approximately (based on epsilon) no change between estimates of the value function at successive iterations
+            """
+            # Here we use a discount factor, so
+            # We want biggest change to a value to be less than epsilon
+            # This is a difference conv check to the others
+            max_delta = jnp.max(jnp.abs(V - V_old))
+            if max_delta < self.epsilon:
+                if iteration >= min_iter:
+                    log.info(f"Converged on iteration {iteration}")
+                    return True
+                else:
+                    log.info(
+                        f"Max delta below epsilon on iteration {iteration}, but min iterations not reached"
+                    )
+                    return False
+            else:
+                log.info(f"Iteration {iteration}, max delta: {max_delta}")
+                return False
+
+    ### Supporting function for self.deterministic_transition_function() ###
+    def _issue_oufo(self, opening_stock: chex.Array, demand: int) -> chex.Array:
+        """Issue stock using OUFO policy"""
+        # Oldest stock on RHS of vector, so reverse
+        _, remaining_stock = jax.lax.scan(
+            self._issue_one_step, demand, opening_stock, reverse=True
+        )
         return remaining_stock
 
-    def _issue_one_step(self, remaining_demand, stock_element):
-        remaining_stock = jnp.where(
-            stock_element - remaining_demand > 0, stock_element - remaining_demand, 0
-        )
-        remaining_demand = jnp.where(
-            remaining_demand - stock_element > 0, remaining_demand - stock_element, 0
-        )
+    def _issue_one_step(
+        self, remaining_demand: int, stock_element: int
+    ) -> Tuple[int, int]:
+        """Fill demand with stock of one age, representing one element in the state"""
+        remaining_stock = (stock_element - remaining_demand).clip(0)
+        remaining_demand = (remaining_demand - stock_element).clip(0)
         return remaining_demand, remaining_stock
 
     def _calculate_single_step_reward(
-        self, state, action, transition_function_reward_output
-    ):
+        self,
+        state: chex.Array,
+        action: Union[int, chex.Array],
+        transition_function_reward_output: chex.Array,
+    ) -> float:
+        """Calculate the single step reward based on the provided state, action and
+        output from the transition function"""
         # Minus one to reflect the fact that they are costs
-        cost = transition_function_reward_output.dot(self.costs)
+        cost = jnp.dot(transition_function_reward_output, self.cost_components)
         reward = -1 * cost
         return reward
 
     ##### Supporting functions for convergence check
 
-    def _calculate_period_deltas_without_discount(self, V, current_iteration, period):
+    ### Supporting functions for self._check_converged_periodic() ###
+
+    def _calculate_period_deltas_without_discount(
+        self, V: chex.Array, current_iteration: int, period: int
+    ) -> Tuple[float, float]:
+        """Return the min and max change in the value function over a period if there is no discount factor"""
         # If there's no discount factor, just subtract Values one period ago
         # from current value estimate
         fname = self.cp_path / f"values_{current_iteration - period}.csv"
@@ -285,8 +386,10 @@ class OnePerishablePeriodicDemandVIR(ValueIterationRunner):
         return min_period_delta, max_period_delta
 
     def _calculate_period_deltas_with_discount(
-        self, V, current_iteration, period, gamma
-    ):
+        self, V: chex.Array, current_iteration: int, period: int, gamma: float
+    ) -> Tuple[float, float]:
+        """Return the min and max undiscounted change in the value function over a period
+        if there is a discount factor"""
         # If there is a discount factor, we need to sum the differences between
         # each step in the period and adjust for the discount factor
         values_dict = self._read_multiple_previous_values(current_iteration, period)
@@ -296,12 +399,15 @@ class OnePerishablePeriodicDemandVIR(ValueIterationRunner):
             period_deltas += (
                 values_dict[current_iteration - p]
                 - values_dict[current_iteration - p - 1]
-            ) / (gamma ** (period - p))
+            ) / (gamma ** (current_iteration - p - 1))
         min_period_delta = jnp.min(period_deltas)
         max_period_delta = jnp.max(period_deltas)
         return min_period_delta, max_period_delta
 
-    def _read_multiple_previous_values(self, current_iteration, period):
+    def _read_multiple_previous_values(
+        self, current_iteration: int, period: int
+    ) -> Dict[int, chex.Array]:
+        """Load the value functions from multiple previous iterations fo calculate period deltas"""
         values_dict = {}
         for p in range(1, period + 1):
             j = current_iteration - p
@@ -311,20 +417,23 @@ class OnePerishablePeriodicDemandVIR(ValueIterationRunner):
 
     def _tree_flatten(self):
         children = (
-            self.weekday_demand_params,
-            self.costs,
+            self.weekday_demand_poisson_mean,
+            self.cost_components,
             self.state_to_idx_mapping,
             self.states,
+            self.padded_batched_states,
             self.actions,
             self.possible_random_outcomes,
             self.V_old,
             self.iteration,
         )  # arrays / dynamic values
         aux_data = {
-            "min_demand": self.min_demand,
-            "max_demand": self.min_demand,
+            "max_demand": self.max_demand,
             "max_useful_life": self.max_useful_life,
+            "max_order_quantity": self.max_order_quantity,
             "batch_size": self.batch_size,
+            "max_batch_size": self.max_batch_size,
+            "n_devices": self.n_devices,
             "epsilon": self.epsilon,
             "gamma": self.gamma,
             "checkpoint_frequency": self.checkpoint_frequency,
@@ -334,7 +443,9 @@ class OnePerishablePeriodicDemandVIR(ValueIterationRunner):
             "action_labels": self.action_labels,
             "state_component_idx_dict": self.state_component_idx_dict,
             "pro_component_idx_dict": self.pro_component_idx_dict,
-            "n_batches": self.n_batches,
+            "n_pad": self.n_pad,
+            "output_info": self.output_info,
+            "weekdays": self.weekdays,
         }
 
     @classmethod
@@ -343,7 +454,7 @@ class OnePerishablePeriodicDemandVIR(ValueIterationRunner):
 
 
 tree_util.register_pytree_node(
-    OnePerishablePeriodicDemandVIR,
-    OnePerishablePeriodicDemandVIR._tree_flatten,
-    OnePerishablePeriodicDemandVIR._tree_unflatten,
+    RajendranPerishablePlateletVIR,
+    RajendranPerishablePlateletVIR._tree_flatten,
+    RajendranPerishablePlateletVIR._tree_unflatten,
 )
