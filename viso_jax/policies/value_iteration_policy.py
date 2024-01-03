@@ -40,7 +40,7 @@ class VIPolicy(object):
         order = policy_params[tuple(obs)]
         return order
 
-    def _load_policy_params_df(self, filepath):
+    def _load_policy_params(self, filepath):
         policy_params_df = pd.read_csv(filepath, index_col=0)
 
         return policy_params_df
