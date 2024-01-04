@@ -24,7 +24,7 @@ class sSPolicy(HeuristicPolicy):
         given paramter, e.g. for different days of the week or different products"""
         if env_id == "HendrixPerishableSubstitutionTwoProduct":
             return ["a", "b"]
-        elif env_id == "MirjaliliPerishablePlatelet":
+        elif env_id == "MirjaliliPerishablePlatelet" or "RajendranPerishablePlatelet":
             return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         else:
             return []
@@ -43,6 +43,8 @@ class sSPolicy(HeuristicPolicy):
             )
         elif env_id == "MirjaliliPerishablePlatelet":
             return mirjalili_perishable_platelet_sS_policy
+        elif env_id == "RajendranPerishablePlatelet":
+            return rajendran_perishable_platelet_sS_policy
         else:
             raise ValueError(f"No (s,S) policy defined for Environment ID {env_id}")
 
@@ -115,3 +117,21 @@ def mirjalili_perishable_platelet_sS_policy(
     total_stock = jnp.sum(obs[1:])  # First element of obs is weekday
     order = base_sS_policy(s, S, total_stock, policy_params)
     return jnp.array(order)
+
+
+def rajendran_perishable_platelet_sS_policy(
+    policy_params: chex.Array, obs: chex.Array, rng: chex.PRNGKey
+) -> chex.Array:
+    """(s,S) policy for RajendranPerishablePlatelet environment"""
+    # NOTE: This does not use the base_sS_policy function because,
+    # for consistency with earlier work/original paper as order is only
+    # placed when stock < s rather than stock <= s
+
+    # policy_params = [[s_Mon, S_Mon], ..., [s_Sun, S_Sun]]
+    weekday = obs[0]
+    s = policy_params[weekday][0]
+    S = policy_params[weekday][1]
+    total_stock = jnp.sum(obs[1:])  # First element of obs is weekday
+    constraint_met = jnp.all(policy_params[:, 0] < policy_params[:, 1])
+    order = jnp.where((total_stock < s) & (constraint_met), S - total_stock, 0)
+    return order
