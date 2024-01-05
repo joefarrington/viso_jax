@@ -8,9 +8,6 @@ import chex
 from flax import struct
 from tensorflow_probability.substrates import jax as tfp
 
-# TODO: I think initial stock is wrong
-# TODO: Consider default value for max demand
-
 # NOTE: As with Gymnax envs in this repo, we follow convention that stock ages left to right (freshest stock left-most in state/obs)
 # This is different to the original gym env where, in line with original paper, oldest stock was right-most.
 
@@ -36,7 +33,7 @@ class EnvParams:
     def create_env_params(
         # Default env params are for m=3, exp1 (exogenous)
         cls,
-        max_demand: int = 100,
+        max_demand: int = 60,
         weekday_demand_poisson_mean: List[float] = [
             37.5,
             37.3,
@@ -87,7 +84,7 @@ jnp_int = jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
 class RajendranPerishablePlateletGymnax(environment.Environment):
     # We need to pass in max_useful_life because it affects array shapes
     # We need to pass in max_order_quantity because self.num_actions depends on it
-    def __init__(self, max_useful_life: int = 3, max_order_quantity: int = 100):
+    def __init__(self, max_useful_life: int = 3, max_order_quantity: int = 60):
         super().__init__()
         self.max_useful_life = max_useful_life
         self.max_order_quantity = max_order_quantity

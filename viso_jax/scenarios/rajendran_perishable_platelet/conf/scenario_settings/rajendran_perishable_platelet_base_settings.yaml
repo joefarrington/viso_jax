@@ -1,6 +1,6 @@
 max_useful_life: 3
-max_order_quantity: 100
-max_demand: 100
+max_order_quantity: 60
+max_demand: 60
 weekday_demand_poisson_mean: [
             37.5,
             37.3,
@@ -16,6 +16,6 @@ shortage_cost: 3250
 wastage_cost: 650
 holding_cost: 130
 initial_weekday: 6
-initial_stock: [0,0] # TODO: LOOK THIS UP
+initial_stock: [0,0]
 max_steps_in_episode: 365
 gamma: 1.0
