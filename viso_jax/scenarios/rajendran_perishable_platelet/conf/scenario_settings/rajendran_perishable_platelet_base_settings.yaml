@@ -1,0 +1,21 @@
+max_useful_life: 3
+max_order_quantity: 100
+max_demand: 100
+weekday_demand_poisson_mean: [
+            37.5,
+            37.3,
+            39.2,
+            37.8,
+            40.5,
+            27.2,
+            28.4,
+        ] # M, T, W T, F, S, S
+variable_order_cost: 650
+fixed_order_cost: 225
+shortage_cost: 3250
+wastage_cost: 650
+holding_cost: 130
+initial_weekday: 6
+initial_stock: [0,0] # TODO: LOOK THIS UP
+max_steps_in_episode: 365
+gamma: 1.0

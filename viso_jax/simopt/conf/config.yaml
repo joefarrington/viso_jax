@@ -15,6 +15,7 @@ hydra:
     - file://../scenarios/hendrix_perishable_one_product/conf
     - file://../scenarios/hendrix_perishable_substitution_two_product/conf
     - file://../scenarios/mirjalili_perishable_platelet/conf
+    - file://../scenarios/rajendran_perishable_platelet/conf
 
 exp_name: de_moor_perishable/m2/exp1 # Default settings correspond to this experiment
 

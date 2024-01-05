@@ -1,0 +1,4 @@
+_target_: viso_jax.policies.heuristic_policies.sQPolicy
+env_id: ${rollout_wrapper.env_id}
+env_kwargs: ${rollout_wrapper.env_kwargs}
+env_params: ${rollout_wrapper.env_params}

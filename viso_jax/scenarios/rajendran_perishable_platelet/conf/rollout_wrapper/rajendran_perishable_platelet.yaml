@@ -1,0 +1,20 @@
+_target_: viso_jax.utils.rollout.RolloutWrapper
+env_id: RajendranPerishablePlatelet
+num_env_steps: ${scenario_settings.max_steps_in_episode}
+num_burnin_steps: 0
+env_kwargs:
+  max_useful_life: ${scenario_settings.max_useful_life}
+  max_order_quantity: ${scenario_settings.max_order_quantity}
+env_params:
+  max_demand: ${scenario_settings.max_demand}
+  weekday_demand_poisson_mean: ${scenario_settings.weekday_demand_poisson_mean}
+  variable_order_cost: ${scenario_settings.variable_order_cost}
+  fixed_order_cost: ${scenario_settings.fixed_order_cost}
+  shortage_cost: ${scenario_settings.shortage_cost}
+  wastage_cost: ${scenario_settings.wastage_cost}
+  holding_cost: ${scenario_settings.holding_cost}
+  initial_weekday: ${scenario_settings.initial_weekday}
+  initial_stock: ${scenario_settings.initial_stock}
+  max_steps_in_episode: ${scenario_settings.max_steps_in_episode}
+  gamma: ${scenario_settings.gamma}
+return_info: False

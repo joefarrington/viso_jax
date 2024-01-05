@@ -84,10 +84,10 @@ class EnvParams:
 jnp_int = jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
 
 
-class PlateletBankGymnax(environment.Environment):
+class RajendranPerishablePlateletGymnax(environment.Environment):
     # We need to pass in max_useful_life because it affects array shapes
     # We need to pass in max_order_quantity because self.num_actions depends on it
-    def __init__(self, max_useful_life: int, max_order_quantity: int):
+    def __init__(self, max_useful_life: int = 3, max_order_quantity: int = 100):
         super().__init__()
         self.max_useful_life = max_useful_life
         self.max_order_quantity = max_order_quantity
@@ -107,7 +107,8 @@ class PlateletBankGymnax(environment.Environment):
         weekday = (state.weekday + 1) % 7
 
         # Receive previous order
-        opening_stock_after_delivery = jnp.hstack([action, state.stock])
+        stock_received = jnp.clip(action, 0, params.max_order_quantity)
+        opening_stock_after_delivery = jnp.hstack([stock_received, state.stock])
 
         # Generate demand, and truncate at max_demand
         demand = jax.random.poisson(key, params.poisson_mean_demand[weekday]).clip(

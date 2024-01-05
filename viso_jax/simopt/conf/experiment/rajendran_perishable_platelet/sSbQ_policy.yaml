@@ -1,0 +1,14 @@
+# @package _global_
+
+defaults:
+  - override /rollout_wrapper: rajendran_perishable_platelet
+  - override /scenario_settings: rajdendran_perishable_platelet_base_settings
+  - override /policy: sSbQ_policy
+
+exp_name: rajendran_perishable_platelet/sSbQ_policy
+
+param_search:
+  sampler:
+    _target_: optuna.samplers.NSGAIISampler
+    population_size: 50
+  early_stopping_rounds: 5
