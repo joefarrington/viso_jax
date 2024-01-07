@@ -10,10 +10,15 @@ from ..scenarios.mirjalili_perishable_platelet.environment import (
     MirjaliliPerishablePlateletDeterministicUsefulLifeGymnax,
 )
 
+from ..scenarios.rajendran_perishable_platelet.environment import (
+    RajendranPerishablePlateletGymnax,
+)
+
 __all__ = [
     "DeMoorPerishableGymnax",
     "HendrixPerishableOneProductGymnax",
     "HendrixPerishableSubstitutionTwoProductGymnax",
     "MirjaliliPerishablePlateletGymnax",
     "MirjaliliPerishablePlateletDeterministicUsefulLifeGymnax",
+    "RajendranPerishablePlateletGymnax",
 ]
