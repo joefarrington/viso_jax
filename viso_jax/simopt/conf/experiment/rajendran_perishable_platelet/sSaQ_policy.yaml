@@ -2,7 +2,7 @@
 
 defaults:
   - override /rollout_wrapper: rajendran_perishable_platelet
-  - override /scenario_settings: rajdendran_perishable_platelet_base_settings
+  - override /scenario_settings: rajendran_perishable_platelet_base_settings
   - override /policy: sSaQ_policy
 
 exp_name: rajendran_perishable_platelet/sSaQ_policy
@@ -11,4 +11,4 @@ param_search:
   sampler:
     _target_: optuna.samplers.NSGAIISampler
     population_size: 50
-  early_stopping_rounds: 5
+  early_stopping_rounds: 20

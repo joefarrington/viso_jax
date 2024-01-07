@@ -2,7 +2,7 @@
 
 defaults:
   - override /vi_runner: rajendran_perishable_platelet
-  - override /scenario_settings: rajdendran_perishable_platelet_base_settings
+  - override /scenario_settings: rajendran_perishable_platelet_base_settings
   - override /rollout_wrapper: rajendran_perishable_platelet
 
 exp_name: rajendran_perishable_platelet/m3

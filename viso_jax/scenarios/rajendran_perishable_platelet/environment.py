@@ -104,13 +104,13 @@ class RajendranPerishablePlateletGymnax(environment.Environment):
         weekday = (state.weekday + 1) % 7
 
         # Receive previous order
-        stock_received = jnp.clip(action, 0, params.max_order_quantity)
+        stock_received = jnp.clip(action, 0, self.max_order_quantity)
         opening_stock_after_delivery = jnp.hstack([stock_received, state.stock])
 
         # Generate demand, and truncate at max_demand
-        demand = jax.random.poisson(key, params.poisson_mean_demand[weekday]).clip(
-            0, params.max_demand
-        )
+        demand = jax.random.poisson(
+            key, params.weekday_demand_poisson_mean[weekday]
+        ).clip(0, params.max_demand)
 
         # Meet demand
         stock_after_issue = self._issue_oufo(opening_stock_after_delivery, demand)
@@ -251,7 +251,7 @@ class RajendranPerishablePlateletGymnax(environment.Environment):
         """Action space of the environment."""
         if params is None:
             params = self.default_params
-        return spaces.Discrete(params.max_order_quantity + 1)
+        return spaces.Discrete(self.max_order_quantity + 1)
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""

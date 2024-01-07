@@ -48,7 +48,7 @@ class RajendranPerishablePlateletVIR(ValueIterationRunner):
 
         Args:
             max_demand: int,
-            weekday_demand_negbin_delta: mean of the Poisson demand districution, one for each weekday in order [M, T, W, T, F, S, S]
+            weekday_demand_poisson_mean: mean of the Poisson demand districution, one for each weekday in order [M, T, W, T, F, S, S]
             max_useful_life: maximum useful life of product, m >= 1
             max_order_quantity: maximum order quantity
             variable_order_cost: cost per unit ordered
@@ -67,9 +67,9 @@ class RajendranPerishablePlateletVIR(ValueIterationRunner):
         """
         self.max_demand = max_demand
         # Roll weekday demands - e.g. in transition for Monday state we're interested in Tuesday's demand
-        self.weekday_demand_poisson_mean = {
-            k: jnp.array(np.roll(v, -1)) for k, v in weekday_demand_poisson_mean.items()
-        }
+        self.weekday_demand_poisson_mean = jnp.array(
+            np.roll(weekday_demand_poisson_mean, -1)
+        )
         self.max_useful_life = max_useful_life
         self.max_order_quantity = max_order_quantity
         self.cost_components = jnp.array(
@@ -212,8 +212,8 @@ class RajendranPerishablePlateletVIR(ValueIterationRunner):
             0,
         )
         expiries = stock_after_issue[-1]
-        holding = jnp.sum(closing_stock)
         closing_stock = stock_after_issue[0 : self.max_useful_life - 1]
+        holding = jnp.sum(closing_stock)
 
         # These components must be in the same order as self.cost_components
         transition_function_reward_output = jnp.hstack(
@@ -239,7 +239,7 @@ class RajendranPerishablePlateletVIR(ValueIterationRunner):
     ) -> chex.Array:
         """Returns an array of the probabilities of each possible random outcome for the provides state-action pair"""
         weekday = state[self.state_component_idx_dict["weekday"]]
-        mean_demand = self.weekday_demand_params["mean"][
+        mean_demand = self.weekday_demand_poisson_mean[
             weekday
         ]  # Due to roll in __init__(), pulling demand for next day
         return jax.scipy.stats.poisson.pmf(
