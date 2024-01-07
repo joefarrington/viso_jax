@@ -44,18 +44,18 @@ def rajendran_perishable_platelet_sSbQ_policy(
     # order when stock is less than s (instead of stock <= s which we
     # used for other scenarios)
 
+    # NOTE: Here, we're just applying the constraint by clipping the parameters
+    # So, we can't jus tnaively report the paramters reported by Optuna
+
     # policy_params = [[s_Mon, S_Mon, a_Mon, Q_Mon], ..., [s_Sun, S_Sun, a_Sun, Q_Sun]]
     weekday = obs[0]
-    s = policy_params[weekday][0]
     S = policy_params[weekday][1]
-    b = policy_params[weekday][2]
+    s = jnp.minimum(policy_params[weekday][0], S - 1)
+    b = jnp.minimum(policy_params[weekday][2], s - 1)
     Q = policy_params[weekday][3]
     total_stock = jnp.sum(obs[1:])  # First element of ob
-    constraint_met = jnp.all(policy_params[:, 0] < policy_params[:, 1]) & jnp.all(
-        policy_params[:, 2] < policy_params[:, 0]
-    )
     order = jnp.where(
-        (total_stock < s) & (constraint_met),
+        (total_stock < s),
         jnp.where(total_stock < b, Q, S - total_stock),
         0,
     )
