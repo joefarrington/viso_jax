@@ -11,4 +11,5 @@ param_search:
   sampler:
     _target_: optuna.samplers.NSGAIISampler
     population_size: 50
+  max_iterations: 200
   early_stopping_rounds: 20
