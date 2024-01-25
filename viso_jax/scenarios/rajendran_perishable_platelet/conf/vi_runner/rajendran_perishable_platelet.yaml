@@ -9,7 +9,7 @@ shortage_cost: ${scenario_settings.shortage_cost}
 wastage_cost: ${scenario_settings.wastage_cost}
 holding_cost: ${scenario_settings.holding_cost}
 max_batch_size: 5000
-epsilon: 0.005 # TODO: Check bs Q-value iteration
+epsilon: 0.005 
 gamma: ${scenario_settings.gamma}
 checkpoint_frequency: 1  # Zero for no checkpoints
 resume_from_checkpoint: False
