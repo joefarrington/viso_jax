@@ -110,15 +110,16 @@ class AsyncValueIterationRunner(ValueIterationRunner):
                 shuffled_state_idxs = jax.random.permutation(
                     _key, jnp.arange(len(self.states))
                 )
-                self.padded_batched_state_idxs, self.n_pad, self.padding_mask = (
+                shuffled_states = self.states[shuffled_state_idxs]
+                self.padded_batched_states, self.n_pad, self.padding_mask = (
                     self._pad_and_batch_states_for_pmap(
-                        shuffled_state_idxs, self.batch_size, self.n_devices
+                        shuffled_states, self.batch_size, self.n_devices
                     )
                 )
 
             padded_batched_V = self.calculate_updated_value_scan_state_batches_pmap(
                 (self.actions, self.possible_random_outcomes, self.V_old),
-                (self.padded_batched_state_idxs, self.padding_mask),
+                (self.padded_batched_states, self.padding_mask),
             )
 
             V = self._unpad(padded_batched_V.reshape(-1), self.n_pad)
@@ -222,9 +223,9 @@ class AsyncValueIterationRunner(ValueIterationRunner):
 
         if not self.shuffle_states:
             # Reshape states into shape (N_devices x N_batches x max_batch_size x state_size)
-            self.padded_batched_state_idxs, self.n_pad, self.padding_mask = (
+            self.padded_batched_states, self.n_pad, self.padding_mask = (
                 self._pad_and_batch_states_for_pmap(
-                    jnp.arange(len(self.states)), self.batch_size, self.n_devices
+                    self.states, self.batch_size, self.n_devices
                 )
             )
 
@@ -288,21 +289,24 @@ class AsyncValueIterationRunner(ValueIterationRunner):
         )
 
     def _pad_and_batch_states_for_pmap(
-        self, state_idxs: chex.Array, batch_size: int, n_devices: int
+        self, states: chex.Array, batch_size: int, n_devices: int
     ) -> Tuple[chex.Array, int]:
         """Pad states and reshape to (N_devices x N_batches x max_batch_size x state_size) to support
         pmap over devices, and using jax.lax.scan to loop over batches of states."""
-        n_pad = (n_devices * batch_size) - (len(state_idxs) % (n_devices * batch_size))
-        padded_state_idxs = jnp.hstack([state_idxs, jnp.zeros(n_pad, dtype=jnp.int32)])
-        padded_batched_state_idxs = padded_state_idxs.reshape(
+        n_pad = (n_devices * batch_size) - (len(states) % (n_devices * batch_size))
+        padded_states = jnp.vstack(
+            [states, jnp.zeros((n_pad, states.shape[-1]), dtype=jnp.int32)]
+        )
+        padded_batched_states = padded_states.reshape(
             n_devices,
             -1,
             batch_size,
+            states.shape[-1],
         )
-        padding_mask = jnp.array([False] * len(state_idxs) + [True] * n_pad).reshape(
+        padding_mask = jnp.array([False] * len(states) + [True] * n_pad).reshape(
             n_devices, -1, batch_size
         )
-        return padded_batched_state_idxs, n_pad, padding_mask
+        return padded_batched_states, n_pad, padding_mask
 
     def _get_state_idx(self, state: chex.Array) -> float:
         """Lookup the value of the next state in the value function from the previous iteration."""
@@ -312,13 +316,12 @@ class AsyncValueIterationRunner(ValueIterationRunner):
         self, carry, padded_batched_state_input: Tuple[chex.Array, chex.Array]
     ) -> Tuple[Tuple[Union[int, chex.Array], chex.Array, chex.Array], chex.Array]:
         """Calculate the updated value for a batch of states"""
-        batch_of_state_idxs, batch_padding_mask = padded_batched_state_input
-        batch_of_states = self.states[batch_of_state_idxs]
+        batch_of_states, batch_padding_mask = padded_batched_state_input
         V_batch = self._calculate_updated_value_vmap_states(batch_of_states, *carry)
 
         # New for async - update V in carry to reflect these new updated values for the batch
         c1, c2, V = carry
-        update_idxs = batch_of_state_idxs
+        update_idxs = self._get_state_idx_vmap_states(batch_of_states)
         V = V.at[update_idxs].set(
             jnp.where(batch_padding_mask, V[update_idxs], V_batch)
         )  # Only update V for non-padding states
@@ -347,14 +350,14 @@ class AsyncValueIterationRunner(ValueIterationRunner):
         # This is slightly round-about way of constructing the table
         # but in practice seemed to help avoid GPU OOM error
 
-        (self.padded_batched_state_idxs, self.n_pad, self.padding_mask) = (
+        (self.padded_batched_states, self.n_pad, self.padding_mask) = (
             self._pad_and_batch_states_for_pmap(
-                jnp.arange(len(self.states)), policy_batch_size, self.n_devices
+                self.states, policy_batch_size, self.n_devices
             )
         )
         best_action_idxs_padded = self._extract_policy_scan_state_batches_pmap(
             (self.actions, self.possible_random_outcomes, V),
-            self.padded_batched_state_idxs,
+            self.padded_batched_states,
         )
         best_action_idxs = self._unpad(best_action_idxs_padded.reshape(-1), self.n_pad)
         best_order_actions = jnp.take(self.actions, best_action_idxs, axis=0)
@@ -368,23 +371,22 @@ class AsyncValueIterationRunner(ValueIterationRunner):
     def _extract_policy_state_batch(
         self,
         carry: Tuple[Union[int, chex.Array], chex.Array, chex.Array],
-        batch_of_state_idxs: chex.Array,
+        batch_of_states: chex.Array,
     ) -> chex.Array:
         """Extract the best action for a batch of states"""
-        batch_of_states = self.states[batch_of_state_idxs]
         best_action_idxs = self._extract_policy_vmap_states(batch_of_states, *carry)
         return carry, best_action_idxs
 
     def _extract_policy_scan_state_batches(
         self,
         carry: Tuple[Union[int, chex.Array], chex.Array, chex.Array],
-        padded_batched_state_idxs: chex.Array,
+        padded_batched_states: chex.Array,
     ) -> chex.Array:
         """Extract the best action for multiple batches of states, using jax.lax.scan to loop over batches of states."""
         carry, best_action_idxs_padded = jax.lax.scan(
             self._extract_policy_state_batch_jit,
             carry,
-            padded_batched_state_idxs,
+            padded_batched_states,
         )
         return best_action_idxs_padded
 
