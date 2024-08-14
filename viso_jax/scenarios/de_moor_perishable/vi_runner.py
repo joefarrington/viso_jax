@@ -398,7 +398,7 @@ class DeMoorPerishableAsyncVIR(DeMoorPerishableVIR, AsyncValueIterationRunner):
         output_directory: Optional[Union[str, Path]] = None,
         checkpoint_frequency: int = 0.99,
         resume_from_checkpoint: Union[bool, str] = False,
-        shuffle_states: bool = True,
+        shuffle_states: bool = False,
         key: int = 0,
     ):
         """Class to run asynchronous value iteration for de_moor_perishable scenario

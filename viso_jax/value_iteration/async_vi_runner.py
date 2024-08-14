@@ -31,7 +31,7 @@ class AsyncValueIterationRunner(ValueIterationRunner):
         output_directory: Optional[Union[str, Path]] = None,
         checkpoint_frequency: int = 0,
         resume_from_checkpoint: Union[bool, str] = False,
-        shuffle_states: bool = True,
+        shuffle_states: bool = False,
         key: int = 0,
     ):
         """Base class for running value iteration
@@ -403,6 +403,8 @@ class AsyncValueIterationRunner(ValueIterationRunner):
         self, shuffled_state_idxs: chex.Array, V: chex.Array
     ) -> chex.Array:
         """Reorder the value function to match the original state order"""
+        # NOTE: This is not necessary when using 1 device, because we could just take the V
+        # from carry. Could add special case for this in future.
         return V.at[shuffled_state_idxs].set(V)
 
     ##### Utility functions to set up pytree for class #####
