@@ -73,7 +73,8 @@ class ValueIterationRunner:
         that maps descriptive names of the components of the state to indices that can be
         used to extract them from an individual state.
         The array of states should be of shape (N_states, state_size)
-        The dictionary is not used by methods in the base class and is therefore optional."""
+        The dictionary is not used by methods in the base class and is therefore optional.
+        """
         raise NotImplementedError
 
     def create_state_to_idx_mapping(self) -> chex.Array:
@@ -236,7 +237,10 @@ class ValueIterationRunner:
         # This is slightly round-about way of constructing the table
         # but in practice seemed to help avoid GPU OOM error
 
-        (self.padded_batched_states, self.n_pad,) = self._pad_and_batch_states_for_pmap(
+        (
+            self.padded_batched_states,
+            self.n_pad,
+        ) = self._pad_and_batch_states_for_pmap(
             self.states, policy_batch_size, self.n_devices
         )
         best_action_idxs_padded = self._extract_policy_scan_state_batches_pmap(

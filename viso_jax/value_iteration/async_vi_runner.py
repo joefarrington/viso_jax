@@ -21,7 +21,55 @@ log = logging.getLogger("ValueIterationRunner")
 # prevent a user from making changes.
 
 
-class AsyncValueIteratioNRunner(ValueIterationRunner):
+class AsyncValueIterationRunner(ValueIterationRunner):
+
+    def __init__(
+        self,
+        max_batch_size: int,
+        epsilon: float,
+        gamma: float,
+        output_directory: Optional[Union[str, Path]] = None,
+        checkpoint_frequency: int = 0,
+        resume_from_checkpoint: Union[bool, str] = False,
+        shuffle_states: bool = True,
+        key: int = 0,
+    ):
+        """Base class for running value iteration
+
+        Args:
+            max_batch_size: Maximum number of states to update in parallel using vmap, will depend on GPU memory
+            epsilon: Convergence criterion for value iteration
+            gamma: Discount factor
+            output_directory: Directory to save output to, if None, will create a new directory
+            checkpoint_frequency: Frequency with which to save checkpoints, 0 for no checkpoints
+            resume_from_checkpoint: If False, start from scratch; if filename, resume from checkpoint
+            shuffle_states: Whether to shuffle states before each iteration
+            key: Random seed for jax.random.PRNGKey
+
+        """
+        self.max_batch_size = max_batch_size
+        self.epsilon = epsilon
+        self.gamma = gamma
+
+        if output_directory is None:
+            now = datetime.now()
+            date = now.strftime("%Y-%m-%d)")
+            time = now.strftime("%H-%M-%S")
+            self.output_directory = Path(f"vi_output/{date}/{time}").absolute()
+        else:
+            self.output_directory = Path(output_directory).absolute()
+
+        self.checkpoint_frequency = checkpoint_frequency
+
+        self.checkpoint_frequency = checkpoint_frequency
+        if self.checkpoint_frequency > 0:
+            self.cp_path = self.output_directory / "checkpoints"
+            self.cp_path.mkdir(parents=True, exist_ok=True)
+
+        self.resume_from_checkpoint = resume_from_checkpoint
+        self.shuffle_states = shuffle_states
+        self.key = jax.random.PRNGKey(key)
+        self._setup()
 
     def run_value_iteration(
         self,
@@ -55,12 +103,31 @@ class AsyncValueIteratioNRunner(ValueIterationRunner):
         log.info(f"Starting value iteration at iteration {self.iteration}")
 
         for i in range(self.iteration, max_iter + 1):
+
+            if self.shuffle_states:
+
+                _key, self.key = jax.random.split(self.key)
+                shuffled_state_idxs = jax.random.permutation(
+                    _key, jnp.arange(len(self.states))
+                )
+                self.padded_batched_state_idxs, self.n_pad, self.padding_mask = (
+                    self._pad_and_batch_states_for_pmap(
+                        shuffled_state_idxs, self.batch_size, self.n_devices
+                    )
+                )
+
             padded_batched_V = self.calculate_updated_value_scan_state_batches_pmap(
                 (self.actions, self.possible_random_outcomes, self.V_old),
-                (self.padded_batched_states, self.padding_mask),
+                (self.padded_batched_state_idxs, self.padding_mask),
             )
 
             V = self._unpad(padded_batched_V.reshape(-1), self.n_pad)
+
+            if self.shuffle_states:
+                # Reorder V to match original state order
+                # NOTE: Might need to get the indices using a loop over batches for large problems
+                V = V.at[shuffled_state_idxs].set(V)
+                pass
 
             # Check for convergence
             if self.check_converged(i, min_iter, V, self.V_old):
@@ -136,6 +203,9 @@ class AsyncValueIteratioNRunner(ValueIterationRunner):
             self._extract_policy_scan_state_batches, in_axes=((None, None, None), 0)
         )
 
+        # New for async
+        self._get_state_idx_vmap_states = jax.vmap(self._get_state_idx)
+
         # Hook for custom setup in subclasses
         self._setup_before_states_actions_random_outcomes_created()
 
@@ -150,12 +220,13 @@ class AsyncValueIteratioNRunner(ValueIterationRunner):
             self.max_batch_size, math.ceil(len(self.states) / self.n_devices)
         )
 
-        # Reshape states into shape (N_devices x N_batches x max_batch_size x state_size)
-        self.padded_batched_states, self.n_pad, self.padding_mask = (
-            self._pad_and_batch_states_for_pmap(
-                self.states, self.batch_size, self.n_devices
+        if not self.shuffle_states:
+            # Reshape states into shape (N_devices x N_batches x max_batch_size x state_size)
+            self.padded_batched_state_idxs, self.n_pad, self.padding_mask = (
+                self._pad_and_batch_states_for_pmap(
+                    jnp.arange(len(self.states)), self.batch_size, self.n_devices
+                )
             )
-        )
 
         # Get the possible actions
         self.actions, self.action_labels = self.generate_actions()
@@ -217,21 +288,21 @@ class AsyncValueIteratioNRunner(ValueIterationRunner):
         )
 
     def _pad_and_batch_states_for_pmap(
-        self, states: chex.Array, batch_size: int, n_devices: int
+        self, state_idxs: chex.Array, batch_size: int, n_devices: int
     ) -> Tuple[chex.Array, int]:
         """Pad states and reshape to (N_devices x N_batches x max_batch_size x state_size) to support
         pmap over devices, and using jax.lax.scan to loop over batches of states."""
-        n_pad = (n_devices * batch_size) - (len(states) % (n_devices * batch_size))
-        padded_states = jnp.vstack(
-            [states, jnp.zeros((n_pad, states.shape[1]), dtype=jnp.int32)]
+        n_pad = (n_devices * batch_size) - (len(state_idxs) % (n_devices * batch_size))
+        padded_state_idxs = jnp.hstack([state_idxs, jnp.zeros(n_pad, dtype=jnp.int32)])
+        padded_batched_state_idxs = padded_state_idxs.reshape(
+            n_devices,
+            -1,
+            batch_size,
         )
-        padded_batched_states = padded_states.reshape(
-            n_devices, -1, batch_size, states.shape[1]
+        padding_mask = jnp.array([False] * len(state_idxs) + [True] * n_pad).reshape(
+            n_devices, -1, batch_size
         )
-        padding_mask = jnp.array([False] * len(states) + [True] * n_pad).reshape(
-            n_devices, -1, batch_size, states.shape[1]
-        )
-        return padded_batched_states, n_pad, padding_mask
+        return padded_batched_state_idxs, n_pad, padding_mask
 
     def _get_state_idx(self, state: chex.Array) -> float:
         """Lookup the value of the next state in the value function from the previous iteration."""
@@ -241,12 +312,13 @@ class AsyncValueIteratioNRunner(ValueIterationRunner):
         self, carry, padded_batched_state_input: Tuple[chex.Array, chex.Array]
     ) -> Tuple[Tuple[Union[int, chex.Array], chex.Array, chex.Array], chex.Array]:
         """Calculate the updated value for a batch of states"""
-        batch_of_states, batch_padding_mask = padded_batched_state_input
+        batch_of_state_idxs, batch_padding_mask = padded_batched_state_input
+        batch_of_states = self.states[batch_of_state_idxs]
         V_batch = self._calculate_updated_value_vmap_states(batch_of_states, *carry)
 
         # New for async - update V in carry to reflect these new updated values for the batch
         c1, c2, V = carry
-        update_idxs = self._get_state_idx_vmap_states(batch_of_states)
+        update_idxs = batch_of_state_idxs
         V = V.at[update_idxs].set(
             jnp.where(batch_padding_mask, V[update_idxs], V_batch)
         )  # Only update V for non-padding states
@@ -265,3 +337,88 @@ class AsyncValueIteratioNRunner(ValueIterationRunner):
             padded_batched_state_input,
         )
         return V_padded
+
+    def get_policy(self, V) -> pd.DataFrame:
+        """Return the best policy, based on the input values V,
+        as a dataframe"""
+        # Find that a smaller batch size required for this part
+        policy_batch_size = self.batch_size // 2
+
+        # This is slightly round-about way of constructing the table
+        # but in practice seemed to help avoid GPU OOM error
+
+        (self.padded_batched_state_idxs, self.n_pad, self.padding_mask) = (
+            self._pad_and_batch_states_for_pmap(
+                jnp.arange(len(self.states)), policy_batch_size, self.n_devices
+            )
+        )
+        best_action_idxs_padded = self._extract_policy_scan_state_batches_pmap(
+            (self.actions, self.possible_random_outcomes, V),
+            self.padded_batched_state_idxs,
+        )
+        best_action_idxs = self._unpad(best_action_idxs_padded.reshape(-1), self.n_pad)
+        best_order_actions = jnp.take(self.actions, best_action_idxs, axis=0)
+        best_order_actions_df = pd.DataFrame(
+            np.array(best_order_actions),
+            index=self.state_tuples,
+            columns=self.action_labels,
+        )
+        return best_order_actions_df
+
+    def _extract_policy_state_batch(
+        self,
+        carry: Tuple[Union[int, chex.Array], chex.Array, chex.Array],
+        batch_of_state_idxs: chex.Array,
+    ) -> chex.Array:
+        """Extract the best action for a batch of states"""
+        batch_of_states = self.states[batch_of_state_idxs]
+        best_action_idxs = self._extract_policy_vmap_states(batch_of_states, *carry)
+        return carry, best_action_idxs
+
+    def _extract_policy_scan_state_batches(
+        self,
+        carry: Tuple[Union[int, chex.Array], chex.Array, chex.Array],
+        padded_batched_state_idxs: chex.Array,
+    ) -> chex.Array:
+        """Extract the best action for multiple batches of states, using jax.lax.scan to loop over batches of states."""
+        carry, best_action_idxs_padded = jax.lax.scan(
+            self._extract_policy_state_batch_jit,
+            carry,
+            padded_batched_state_idxs,
+        )
+        return best_action_idxs_padded
+
+    ##### Utility functions to set up pytree for class #####
+    # See https://jax.readthedocs.io/en/latest/faq.html#strategy-3-making-customclass-a-pytree
+
+    def _tree_flatten(self):
+        # This method should return two items as described in the documentation linked above
+        # 1) A tuple containing any arrays/dynamic values that are properties of the class
+        # 2) A dictionary containing any static values that are properties of the class
+        children = (
+            self.state_to_idx_mapping,
+            self.states,
+            self.padded_batched_state_idxs,
+            self.actions,
+            self.possible_random_outcomes,
+            self.V_old,
+            self.iteration,
+        )  # arrays / dynamic values
+        aux_data = {
+            "max_batch_size": self.max_batch_size,
+            "batch_size": self.batch_size,
+            "n_devices": self.n_devices,
+            "epsilon": self.epsilon,
+            "gamma": self.gamma,
+            "checkpoint_frequency": self.checkpoint_frequency,
+            "cp_path": self.cp_path,
+            "resume_from_checkpoint": self.resume_from_checkpoint,
+            "state_tuples": self.state_tuples,
+            "action_labels": self.action_labels,
+            "state_component_idx_dict": self.state_component_idx_dict,
+            "pro_component_idx_dict": self.pro_component_idx_dict,
+            "n_pad": self.n_pad,
+            "padding_mask": self.padding_mask,
+            "output_info": self.output_info,
+        }  # static values
+        return (children, aux_data)

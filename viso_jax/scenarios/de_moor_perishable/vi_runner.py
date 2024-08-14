@@ -5,6 +5,7 @@ import itertools
 import logging
 import numpyro
 from viso_jax.value_iteration.base_vi_runner import ValueIterationRunner
+from viso_jax.value_iteration.async_vi_runner import AsyncValueIterationRunner
 from pathlib import Path
 from jax import tree_util
 from typing import Union, Dict, Tuple, List, Optional
@@ -247,7 +248,8 @@ class DeMoorPerishableVIR(ValueIterationRunner):
     ) -> bool:
         """Convergence check to determine whether to stop value iteration. This convergence check
         is testing for the convergence of the value function itself, and will stop value iteration
-        when the values for every state are approximately equal to the values from the previous iteration"""
+        when the values for every state are approximately equal to the values from the previous iteration
+        """
 
         max_delta = jnp.max(jnp.abs(V - V_old))
         if max_delta < self.epsilon:
@@ -372,3 +374,77 @@ tree_util.register_pytree_node(
     DeMoorPerishableVIR._tree_flatten,
     DeMoorPerishableVIR._tree_unflatten,
 )
+
+
+class DeMoorPerishableAsyncVIR(DeMoorPerishableVIR, AsyncValueIterationRunner):
+    """Class to run asynchronous value iteration for de_moor_perishable scenario"""
+
+    def __init__(
+        self,
+        max_demand: int,
+        demand_gamma_mean: float,
+        demand_gamma_cov: float,
+        max_useful_life: int,
+        lead_time: int,
+        max_order_quantity: int,
+        variable_order_cost: float,
+        shortage_cost: float,
+        wastage_cost: float,
+        holding_cost: float,
+        issue_policy: str = "fifo",
+        max_batch_size: int = 1000,
+        epsilon: float = 1e-4,
+        gamma: float = 1,
+        output_directory: Optional[Union[str, Path]] = None,
+        checkpoint_frequency: int = 0.99,
+        resume_from_checkpoint: Union[bool, str] = False,
+        shuffle_states: bool = True,
+        key: int = 0,
+    ):
+        """Class to run asynchronous value iteration for de_moor_perishable scenario
+
+        Args:
+            max_demand: maximum daily demand
+            demand_gamma_mean: mean of gamma distribution that models demand
+            demand_gamma_cov: coefficient of variation of gamma distribution that models demand
+            max_useful_life: maximum useful life of product, m >= 1
+            lead_time: lead time of product, L >= 1
+            max_order_quantity: maximum order quantity
+            variable_order_cost: cost per unit ordered
+            shortage_cost: cost per unit of demand not met
+            wastage_cost: cost per unit of product that expires before use
+            holding_cost: cost per unit of product in stock at the end of the day
+            issue_policy: should be either 'fifo' or 'lifo'
+            max_batch_size: Maximum number of states to update in parallel using vmap, will depend on GPU memory
+            epsilon: Convergence criterion for value iteration
+            gamma: Discount factor
+            output_directory: Directory to save output to, if None, will create a new directory
+            checkpoint_frequency: Frequency with which to save checkpoints, 0 for no checkpoints
+            resume_from_checkpoint: If False, start from scratch; if filename, resume from checkpoint
+            shuffle_states: Whether to shuffle states before each iteration
+            key: Random seed for jax.random.PRNGKey
+
+        """
+        self.shuffle_states = shuffle_states
+        self.key = jax.random.PRNGKey(key)
+
+        # Use __init__ from DeMoorPerishableVIR
+        super().__init__(
+            max_demand,
+            demand_gamma_mean,
+            demand_gamma_cov,
+            max_useful_life,
+            lead_time,
+            max_order_quantity,
+            variable_order_cost,
+            shortage_cost,
+            wastage_cost,
+            holding_cost,
+            issue_policy,
+            max_batch_size,
+            epsilon,
+            gamma,
+            output_directory,
+            checkpoint_frequency,
+            resume_from_checkpoint,
+        )
