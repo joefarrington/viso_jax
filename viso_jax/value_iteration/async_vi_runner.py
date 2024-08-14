@@ -106,16 +106,12 @@ class AsyncValueIterationRunner(ValueIterationRunner):
 
             if self.shuffle_states:
 
-                _key, self.key = jax.random.split(self.key)
-                shuffled_state_idxs = jax.random.permutation(
-                    _key, jnp.arange(len(self.states))
-                )
-                shuffled_states = self.states[shuffled_state_idxs]
-                self.padded_batched_states, self.n_pad, self.padding_mask = (
-                    self._pad_and_batch_states_for_pmap(
-                        shuffled_states, self.batch_size, self.n_devices
-                    )
-                )
+                (
+                    shuffled_state_idxs,
+                    self.padded_batched_states,
+                    self.n_pad,
+                    self.padding_mask,
+                ) = self.shuffle_states_jit(self.key)
 
             padded_batched_V = self.calculate_updated_value_scan_state_batches_pmap(
                 (self.actions, self.possible_random_outcomes, self.V_old),
@@ -206,6 +202,7 @@ class AsyncValueIterationRunner(ValueIterationRunner):
 
         # New for async
         self._get_state_idx_vmap_states = jax.vmap(self._get_state_idx)
+        self.shuffle_states_jit = jax.jit(self._shuffle_states)
 
         # Hook for custom setup in subclasses
         self._setup_before_states_actions_random_outcomes_created()
@@ -221,13 +218,13 @@ class AsyncValueIterationRunner(ValueIterationRunner):
             self.max_batch_size, math.ceil(len(self.states) / self.n_devices)
         )
 
-        if not self.shuffle_states:
-            # Reshape states into shape (N_devices x N_batches x max_batch_size x state_size)
-            self.padded_batched_states, self.n_pad, self.padding_mask = (
-                self._pad_and_batch_states_for_pmap(
-                    self.states, self.batch_size, self.n_devices
-                )
+        # if not self.shuffle_states:
+        # Reshape states into shape (N_devices x N_batches x max_batch_size x state_size)
+        self.padded_batched_states, self.n_pad, self.padding_mask = (
+            self._pad_and_batch_states_for_pmap(
+                self.states, self.batch_size, self.n_devices
             )
+        )
 
         # Get the possible actions
         self.actions, self.action_labels = self.generate_actions()
@@ -294,8 +291,8 @@ class AsyncValueIterationRunner(ValueIterationRunner):
         """Pad states and reshape to (N_devices x N_batches x max_batch_size x state_size) to support
         pmap over devices, and using jax.lax.scan to loop over batches of states."""
         n_pad = (n_devices * batch_size) - (len(states) % (n_devices * batch_size))
-        padded_states = jnp.vstack(
-            [states, jnp.zeros((n_pad, states.shape[-1]), dtype=jnp.int32)]
+        padded_states = jnp.pad(
+            states, ((0, n_pad), (0, 0)), mode="constant", constant_values=0
         )
         padded_batched_states = padded_states.reshape(
             n_devices,
@@ -303,7 +300,7 @@ class AsyncValueIterationRunner(ValueIterationRunner):
             batch_size,
             states.shape[-1],
         )
-        padding_mask = jnp.array([False] * len(states) + [True] * n_pad).reshape(
+        padding_mask = (jnp.arange(len(states) + n_pad) >= len(states)).reshape(
             n_devices, -1, batch_size
         )
         return padded_batched_states, n_pad, padding_mask
@@ -389,6 +386,17 @@ class AsyncValueIterationRunner(ValueIterationRunner):
             padded_batched_states,
         )
         return best_action_idxs_padded
+
+    def _shuffle_states(self, key: chex.Array) -> Tuple[chex.Array, int, chex.Array]:
+        """Shuffle the states"""
+        shuffled_state_idxs = jax.random.permutation(key, jnp.arange(len(self.states)))
+        shuffled_states = self.states[shuffled_state_idxs]
+        padded_batched_states, n_pad, padding_mask = (
+            self._pad_and_batch_states_for_pmap(
+                shuffled_states, self.batch_size, self.n_devices
+            )
+        )
+        return shuffled_state_idxs, padded_batched_states, n_pad, padding_mask
 
     ##### Utility functions to set up pytree for class #####
     # See https://jax.readthedocs.io/en/latest/faq.html#strategy-3-making-customclass-a-pytree
