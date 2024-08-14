@@ -122,9 +122,7 @@ class AsyncValueIterationRunner(ValueIterationRunner):
 
             if self.shuffle_states:
                 # Reorder V to match original state order
-                # NOTE: Might need to get the indices using a loop over batches for large problems
-                V = V.at[shuffled_state_idxs].set(V)
-                pass
+                V = self._reorder_V_from_shuffled_states_jit(shuffled_state_idxs, V)
 
             # Check for convergence
             if self.check_converged(i, min_iter, V, self.V_old):
@@ -203,6 +201,9 @@ class AsyncValueIterationRunner(ValueIterationRunner):
         # New for async
         self._get_state_idx_vmap_states = jax.vmap(self._get_state_idx)
         self.shuffle_states_jit = jax.jit(self._shuffle_states)
+        self._reorder_V_from_shuffled_states_jit = jax.jit(
+            self._reorder_V_from_shuffled_states
+        )
 
         # Hook for custom setup in subclasses
         self._setup_before_states_actions_random_outcomes_created()
@@ -397,6 +398,12 @@ class AsyncValueIterationRunner(ValueIterationRunner):
             )
         )
         return shuffled_state_idxs, padded_batched_states, n_pad, padding_mask
+
+    def _reorder_V_from_shuffled_states(
+        self, shuffled_state_idxs: chex.Array, V: chex.Array
+    ) -> chex.Array:
+        """Reorder the value function to match the original state order"""
+        return V.at[shuffled_state_idxs].set(V)
 
     ##### Utility functions to set up pytree for class #####
     # See https://jax.readthedocs.io/en/latest/faq.html#strategy-3-making-customclass-a-pytree
