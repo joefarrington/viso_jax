@@ -105,13 +105,14 @@ class AsyncValueIterationRunner(ValueIterationRunner):
         for i in range(self.iteration, max_iter + 1):
 
             if self.shuffle_states:
+                self.key, subkey = jax.random.split(self.key)
 
                 (
                     shuffled_state_idxs,
                     self.padded_batched_states,
                     self.n_pad,
                     self.padding_mask,
-                ) = self.shuffle_states_jit(self.key)
+                ) = self.shuffle_states_jit(subkey)
 
             padded_batched_V = self.calculate_updated_value_scan_state_batches_pmap(
                 (self.actions, self.possible_random_outcomes, self.V_old),
@@ -405,7 +406,7 @@ class AsyncValueIterationRunner(ValueIterationRunner):
         """Reorder the value function to match the original state order"""
         # NOTE: This is not necessary when using 1 device, because we could just take the V
         # from carry. Could add special case for this in future.
-        return V.at[shuffled_state_idxs].set(V)
+        return V[jnp.argsort(shuffled_state_idxs)]
 
     ##### Utility functions to set up pytree for class #####
     # See https://jax.readthedocs.io/en/latest/faq.html#strategy-3-making-customclass-a-pytree
@@ -417,7 +418,8 @@ class AsyncValueIterationRunner(ValueIterationRunner):
         children = (
             self.state_to_idx_mapping,
             self.states,
-            self.padded_batched_state_idxs,
+            self.padded_batched_states,
+            self.padding_mask,
             self.actions,
             self.possible_random_outcomes,
             self.V_old,
@@ -437,7 +439,6 @@ class AsyncValueIterationRunner(ValueIterationRunner):
             "state_component_idx_dict": self.state_component_idx_dict,
             "pro_component_idx_dict": self.pro_component_idx_dict,
             "n_pad": self.n_pad,
-            "padding_mask": self.padding_mask,
             "output_info": self.output_info,
         }  # static values
         return (children, aux_data)
