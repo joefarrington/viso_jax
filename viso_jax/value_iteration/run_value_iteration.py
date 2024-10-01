@@ -3,9 +3,8 @@ import logging
 from jax.config import config as jax_config
 import hydra
 from viso_jax.evaluation.evaluate_policy import create_evaluation_output_summary
-from viso_jax.utils.yaml import to_yaml, from_yaml
+from viso_jax.utils.yaml import to_yaml
 import jax
-import pandas as pd
 from omegaconf.dictconfig import DictConfig
 from pathlib import Path
 
@@ -29,13 +28,13 @@ def main(cfg: DictConfig) -> None:
 
     # Save final values
     log.info("Saving final values")
-    vi_output["V"].to_csv(output_dir / f"V.csv")
+    vi_output["V"].to_csv(output_dir / "V.csv")
     log.info("Final values saved")
 
     # Save final policy if extracted
     if "policy" in vi_output.keys():
         log.info("Saving final policy")
-        vi_output["policy"].to_csv(output_dir / f"policy.csv")
+        vi_output["policy"].to_csv(output_dir / "policy.csv")
         log.info("Final policy saved")
 
     vi_complete_time = datetime.now()
@@ -67,7 +66,7 @@ def main(cfg: DictConfig) -> None:
         rollout_results = rollout_wrapper.batch_rollout(rng_eval, policy_params)
         evaluation_output = create_evaluation_output_summary(cfg, rollout_results)
 
-        log.info(f"Results from running VI policy in simulation:")
+        log.info("Results from running VI policy in simulation:")
         for k, v in evaluation_output.items():
             log.info(f"{k}: {v:.4f}")
 

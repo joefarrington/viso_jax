@@ -20,6 +20,16 @@ do
     done
 done
 
+for m in ${max_useful_lives[@]}
+do
+    for exp in ${experiments[@]}
+    do  
+        echo "Running asynchronous value iteration for m=${m}, exp=${exp}"
+        python run_value_iteration.py +experiment=${scenario_name}/async/m${m}/exp${exp} \
+        hydra.run.dir=./outputs/run_all_scenario_a/${date_now}/${time_now}/async/m${m}/exp${exp}
+    done
+done
+
 cd ../simopt
 
 for m in ${max_useful_lives[@]}

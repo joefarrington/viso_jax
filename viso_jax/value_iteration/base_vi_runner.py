@@ -212,9 +212,11 @@ class ValueIterationRunner:
 
         to_return = {}
 
+        self.output_info["iterations"] = i
+
         # Put final values into pd.DataFrame to return
         values_df = pd.DataFrame(np.array(V), index=self.state_tuples, columns=["V"])
-        to_return[f"V"] = values_df
+        to_return["V"] = values_df
 
         # If extract_policy is True, extract policy with one-step ahead search
         # to return in output

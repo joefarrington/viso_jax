@@ -9,7 +9,7 @@ hydra:
   job:
     chdir: True
   run:
-    dir: outputs/${exp_name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: new_outputs/${exp_name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   searchpath:
       # Search paths assume that run_value_iteration.py will be run from value_iteration/
     - file://../scenarios/de_moor_perishable/conf

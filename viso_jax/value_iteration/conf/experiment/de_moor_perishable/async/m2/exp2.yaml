@@ -1,0 +1,7 @@
+# @package _global_
+
+defaults:
+  - override /vi_runner: de_moor_perishable_async
+  - override /scenario_settings: de_moor_perishable/m2/exp2
+
+exp_name: de_moor_perishable/async/m2/exp2
