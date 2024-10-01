@@ -1,0 +1,7 @@
+# @package _global_
+
+defaults:
+  - override /vi_runner: de_moor_perishable
+  - override /scenario_settings: de_moor_perishable/m5/exp1
+
+exp_name: de_moor_perishable/m5/exp1
