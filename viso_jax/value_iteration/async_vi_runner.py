@@ -6,7 +6,7 @@ import re
 import logging
 import math
 from pathlib import Path
-from typing import Union, Tuple, Dict, List, Optional
+from typing import Union, Tuple, Dict, Optional
 import chex
 from datetime import datetime
 from viso_jax.value_iteration.base_vi_runner import ValueIterationRunner
@@ -98,7 +98,7 @@ class AsyncValueIterationRunner(ValueIterationRunner):
 
         # If min_iter greater than max_iter, raise an error
         if min_iter > max_iter:
-            raise ValueError(f"min_iter must be less than or equal to max_iter")
+            raise ValueError("min_iter must be less than or equal to max_iter")
 
         log.info(f"Starting value iteration at iteration {self.iteration}")
 
@@ -146,7 +146,7 @@ class AsyncValueIterationRunner(ValueIterationRunner):
 
         # Put final values into pd.DataFrame to return
         values_df = pd.DataFrame(np.array(V), index=self.state_tuples, columns=["V"])
-        to_return[f"V"] = values_df
+        to_return["V"] = values_df
 
         # If extract_policy is True, extract policy with one-step ahead search
         # to return in output
