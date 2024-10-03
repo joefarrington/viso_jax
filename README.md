@@ -49,10 +49,10 @@ Python dependencies are listed in `pyproject.toml`. We use [uv](https://docs.ast
 viso_jax and its Python dependencies can be installed using the code snippet below. This snippet assumes that you have [uv installed](https://docs.astral.sh/uv/getting-started/installation/). 
 
 ```bash
-uv venv
-source .venv/bin/activate
 git clone https://github.com/joefarrington/viso_jax.git
 cd viso_jax
+uv venv
+source .venv/bin/activate
 uv pip install .
 ```
 
