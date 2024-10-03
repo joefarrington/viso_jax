@@ -30,10 +30,3 @@ dev-dependencies = [
     "pytest>=8.3.3",
     "pytest-datadir>=1.5.0",
 ]
-
-[tool.pytest.ini_options]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "serial",
-    "jax: marks tests for checking JAX recognises accelerator",
-]
