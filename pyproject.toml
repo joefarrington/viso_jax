@@ -1,58 +1,32 @@
-[tool.poetry]
+[project]
 name = "viso-jax"
 version = "0.1.0"
 description = "GPU-accelerated value iteration and simulation for perishable inventory control using JAX"
-authors = ["Joe Farrington <farrington.joe@gmail.com>"]
+authors = [{name = "Joe Farrington", email = "farrington.joe@gmail.com"}]
 readme = "README.md"
-packages = [{include = "viso_jax"}]
-
-[tool.poetry.dependencies]
-python = ">=3.8,<3.11"
-hydra-core = "^1.2.0"
-numpyro = "^0.10.1, <0.11.0"
-gymnax = "^0.0.5"
-optuna = "^3.0.5"
-flax = "<0.6.5"
-orbax = "<=0.1.2"
-numpy = "<1.24"
-pandas = "^1.5.0"
-matplotlib = "^3.6.2"
-tensorflow-probability = "^0.19.0"
-plotly = "^5.11.0"
-seaborn = "^0.12.1"
-scipy = "^1.7.0"
-
-[tool.poetry.group.jax.dependencies]
-jax = {extras = ["cuda"], version = "^0.3.15, <0.4.0", source = "jax"}
-jaxlib = {version = "^0.3.15, <0.4.0", source = "jaxlib"}
-
-[tool.poetry.group.dev.dependencies]
-jupyter = "^1.0.0"
-black = "^22.12.0"
-
-[tool.poetry.group.test.dependencies]
-pytest = "^7.1.3"
-pytest-datadir = "^1.4.1"
-
-[[tool.poetry.source]]
-name = "jax"
-url = "https://storage.googleapis.com/jax-releases/jax_releases.html"
-default = false
-secondary = false
-
-[[tool.poetry.source]]
-name = "jaxlib"
-url = "https://storage.googleapis.com/jax-releases/jax_cuda_releases.html"
-default = false
-secondary = false
-
-[tool.pytest.ini_options]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "serial",
-    "jax: marks tests for checking JAX recognises accelerator",
+requires-python = ">=3.9"
+dependencies = [
+    "jax[cuda12]>=0.4.30",
+    "hydra-core>=1.3.2",
+    "numpyro>=0.15.3",
+    "gymnax>=0.0.6",
+    "optuna==3.1.0",
+    "flax>=0.8.5",
+    "numpy<2.0",
+    "pandas>=2.2.3",
+    "scipy>=1.13.1",
+    "matplotlib>=3.9.2",
+    "tensorflow-probability>=0.24.0",
 ]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "jupyter>=1.1.1",
+    "black>=24.8.0",
+    "pytest>=8.3.3",
+    "pytest-datadir>=1.5.0",
+]

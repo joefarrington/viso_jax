@@ -1,6 +1,6 @@
 from datetime import datetime
 import logging
-from jax.config import config as jax_config
+from jax import config as jax_config
 import hydra
 from viso_jax.evaluation.evaluate_policy import create_evaluation_output_summary
 from viso_jax.utils.yaml import to_yaml, from_yaml

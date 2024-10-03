@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import jax
 import jax.numpy as jnp
-from jax.config import config as jax_config
+from jax import config as jax_config
 import hydra
 from viso_jax.simopt.run_optuna_simopt import (
     simopt_grid_sampler,

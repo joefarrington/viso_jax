@@ -44,20 +44,22 @@ The single product scenario described by [Hendrix et al (2019)](https://doi.org/
 
 To use JAX with Nvidia GPU-acceleration, you must first install CUDA and CuDNN. See the [JAX installation instructions](https://github.com/google/jax#installation) for further details.
 
-Python dependencies are listed in `pyproject.toml`. We use [poetry](https://python-poetry.org/docs/) for dependency management.
+Python dependencies are listed in `pyproject.toml`. We use [uv](https://docs.astral.sh/uv/) for dependency management.
 
-viso_jax and its Python dependencies can be installed using the code snippet below. This snippet assumes that you have [poetry installed](https://python-poetry.org/docs/#installation). If this snippet is not run in a virtual environment, poetry will create a new virtual environment before installing the dependencies.
+viso_jax and its Python dependencies can be installed using the code snippet below. This snippet assumes that you have [uv installed](https://docs.astral.sh/uv/getting-started/installation/). 
 
 ```bash
+uv venv
+source .venv/bin/activate
 git clone https://github.com/joefarrington/viso_jax.git
 cd viso_jax
-poetry install
+uv pip install .
 ```
 
 Once installation is complete, you can test that JAX recognises an accelerator (GPU or TPU) by running the following snippet:
 
 ```bash
-poetry run pytest -m "jax"
+uv run pytest tests -m "jax"
 ```
 
 ## Reproducing experiments with Colab
