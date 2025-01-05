@@ -4,6 +4,10 @@
 
 GPU-accelerated value iteration and simulation for perishable inventory control using JAX
 
+## New package: MDPax
+
+In January 2025, we released a full Python package to help other researchers take advantage of the findings in this work: MDPax. See the [GitHub repository](https://github.com/joefarrington/mdpax) and [documentation](https://mdpax.readthedocs.io/en/latest/) for more details.
+
 ## Introduction
 
 This repository provides the code to support the paper <i>Going faster to see further: GPU-accelerated value iteration and simulation for perishable inventory control using JAX</i> by Farrington et al ([arXiv preprint](https://arxiv.org/abs/2303.10672))
